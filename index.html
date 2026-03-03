@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desktop Mate Simulator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-slate-900 text-slate-100 overflow-hidden h-screen w-full relative select-none">
+
+  <!-- Background Effects -->
+  <!-- Custom Backgrounds -->
+  <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+    <img src="pictures/bg_hegen_big.png" class="w-full h-full object-cover" style="object-position: center bottom;"
+      alt="background">
+  </div>
+
+  <!-- Game Container (Mates Render Here) -->
+  <div id="game-container" class="absolute inset-0 z-10 w-full h-full">
+    <!-- Mates will be injected here by main.js -->
+  </div>
+
+  <!-- UI Overlay -->
+  <div id="ui-layer" class="fixed top-0 left-0 right-0 z-50 transition-transform duration-300 pointer-events-none">
+    <!-- Top Bar Container -->
+    <div id="top-bar"
+      class="bg-slate-900/80 backdrop-blur-md border-b border-slate-700 p-2 pointer-events-auto flex items-center justify-between gap-4 shadow-lg transition-transform duration-300">
+
+      <!-- Left: Mate Controls -->
+      <div class="flex items-center gap-3">
+        <h1 class="font-bold text-slate-200 text-sm hidden sm:block mr-2">Supiki World</h1>
+
+        <button onclick="addMate('', 'supiki')"
+          class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1">
+          <span>+</span> Supiki
+        </button>
+
+        <div class="h-6 w-px bg-slate-700 mx-1"></div>
+
+        <!-- Food Button: Spawns Cinnamon (Candy) specifically -->
+        <button onclick="spawnObject(Object.assign({}, state.configs.FOOD, {foodType: 'cinnamon'}), 200, 200)"
+          title="Spawn Cinnamon"
+          class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded text-xs transition-colors">
+          🍬
+        </button>
+        <!-- Optional: Random Food Button? User didn't ask explicitly but might be useful. Skipping for now to keep UI clean. -->
+
+        <button onclick="spawnObject(state.configs.SPIKEY, 200, 200)" title="Spawn Spikey"
+          class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded text-xs transition-colors">
+          🌵
+        </button>
+        <button onclick="spawnObject(state.configs.TRAMPOLINE, 200, 200)" title="Spawn Trampoline"
+          class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded text-xs transition-colors">
+          🔵
+        </button>
+        <button onclick="spawnObject(state.configs.POND, 200, 200)" title="Spawn Pond"
+          class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded text-xs transition-colors">
+          💧
+        </button>
+        <button onclick="spawnObject(state.configs.PUMPKIN, 200, 200)" title="Spawn Pumpkin"
+          class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded text-xs transition-colors">
+          🎃
+        </button>
+        <button onclick="spawnObject(state.configs.ICE, 200, 200)" title="Spawn Ice"
+          class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded text-xs transition-colors">
+          🧊
+        </button>
+        <button onclick="spawnObject(state.configs.VENDING, 200, 200)" title="Spawn Vending Machine"
+          class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded text-xs transition-colors">
+          🥤
+        </button>
+
+      </div>
+
+      <!-- Right: Stats & Settings -->
+      <div class="flex items-center gap-4 text-xs">
+        <span id="mate-count" class="text-slate-400 font-mono hidden sm:inline">Count: 0</span>
+
+        <div class="flex items-center gap-2 bg-slate-800 rounded px-2 py-1 border border-slate-700">
+          <span class="text-slate-500">G:</span>
+          <input id="input-gravity" type="range" min="0" max="2" step="0.1" value="0.3"
+            class="w-16 h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <button onclick="toggleDebugZones()" class="text-yellow-400 hover:text-yellow-300 font-semibold px-2">
+          Debug
+        </button>
+
+        <button onclick="clearAllMates()" class="text-red-400 hover:text-red-300 font-semibold px-2">
+          Clear
+        </button>
+
+        <button id="toggle-btn" onclick="toggleControls()" class="text-slate-400 hover:text-white px-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Restore Button (Hidden by default, shown when Top Bar is hidden) -->
+    <button id="restore-btn" onclick="toggleControls()"
+      class="fixed top-2 right-2 bg-slate-800/80 text-white p-2 rounded shadow-lg pointer-events-auto backdrop-blur hidden z-50 hover:bg-slate-700 transition-colors">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+
+    <!-- Inspector Panel (Floating) -->
+    <div id="inspector-panel"
+      class="hidden absolute top-14 right-4 bg-slate-800/95 border border-slate-600 p-3 rounded-lg shadow-xl w-56 pointer-events-auto backdrop-blur-sm text-xs">
+      <div class="flex justify-between items-center mb-2 border-b border-slate-600 pb-1">
+        <span class="font-bold text-slate-300">Inspector</span>
+        <span id="insp-id" class="text-slate-500 font-mono">#0</span>
+      </div>
+      <div class="space-y-1 mb-3">
+        <div class="flex justify-between"><span>Emotion</span><span id="insp-emotion"
+            class="text-blue-300 font-mono">0</span></div>
+        <div class="flex justify-between"><span>Courage</span><span id="insp-courage"
+            class="text-green-300 font-mono">0</span></div>
+        <div class="flex justify-between"><span>Wisdom</span><span id="insp-wisdom"
+            class="text-purple-300 font-mono">0</span></div>
+        <div class="flex justify-between"><span>Friend</span><span id="insp-friendliness"
+            class="text-pink-300 font-mono">0</span></div>
+        <div class="flex justify-between"><span>State</span><span id="insp-state"
+            class="text-slate-400 font-mono">IDLE</span></div>
+      </div>
+      <div class="flex gap-2">
+        <button id="insp-delete-btn"
+          class="flex-1 bg-red-900/50 hover:bg-red-800 text-red-100 py-1 rounded border border-red-800 transition-colors">Delete</button>
+        <button onclick="document.getElementById('inspector-panel').classList.add('hidden')"
+          class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 py-1 rounded transition-colors">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Logic -->
+  <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
