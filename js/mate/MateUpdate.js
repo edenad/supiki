@@ -806,7 +806,7 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                         mate.skewX = Math.sin(mate.actionTimer * 0.5) * 15 * mate.direction;
                         mate.offsetY = 0;
                         if (target.bodyTemp !== undefined) {
-                            target.bodyTemp = Math.min(100, target.bodyTemp + 0.8);
+                            target.bodyTemp = Math.min(100, target.bodyTemp + 0.4); // ×2仕事量
                         }
                     }
                 }

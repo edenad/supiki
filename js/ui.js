@@ -88,19 +88,16 @@ export function toggleGameMode() {
     state.gameMode = !state.gameMode;
     const normalBg = document.getElementById('bg-normal');
     const gameBg = document.getElementById('bg-gamemode');
-    const stageEl = document.getElementById('stage-overlay');
     const btn = document.getElementById('game-mode-btn');
 
     if (state.gameMode) {
         normalBg?.classList.add('hidden');
         gameBg?.classList.remove('hidden');
-        stageEl?.classList.remove('hidden');
         if (btn) { btn.textContent = '🌿'; btn.title = '通常モードに戻る'; }
         if (window.startGame) window.startGame();
     } else {
         normalBg?.classList.remove('hidden');
         gameBg?.classList.add('hidden');
-        stageEl?.classList.add('hidden');
         if (btn) { btn.textContent = '🎮'; btn.title = 'ゲームモード'; }
         if (window.stopGame) window.stopGame();
     }

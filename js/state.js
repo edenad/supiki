@@ -24,11 +24,13 @@ export const state = {
     },
     time: 0,
     objects: [], // Array of { id, type, x, z, amount, maxAmount }
-    groups: [],   // Array of Group instances
+    groups: [],  // Array of Group instances
     params: {
         viewScale: 1,
         viewOffsetX: 0,
         viewOffsetY: 0
     },
-    gameMode: false // true = game mode active
+    gameMode: false, // true = game mode active
+    // Normal mode snapshot (restored when leaving game mode)
+    savedNormalState: null
 };
