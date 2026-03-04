@@ -4,13 +4,13 @@ import { spawnSingleMate, clearAllMates } from '../mate/MateLogic.js';
 import { initGameUI, updateGameUI, showGameOver, hideGameUI } from './GameUI.js';
 
 const CFG = {
-    DECAY_BASE: 0.01515,   // Base decay. 平均5.5倍の乗数で毎フレーム0.083減少 (20sで100)
-    MOUSE_GAIN: 0.334,     // 5s(300f)で100回復
+    DECAY_BASE: 0.01515,   // Base decay.
+    MOUSE_GAIN: 0.5,       // 200f(~3.3s)でfullから0の所をすり続けると+100
     SPAWN_FRAMES: 7200,    // 120s at 60fps
     MAX_MATES: 20,
     INITIAL_MATES: 4,
     MOUSE_RADIUS: 120,     // px in container-local coords
-    MOUSE_MIN_SPEED: 4,    // px/frame
+    MOUSE_MIN_SPEED: 2,    // px/frame - 低めにして当たりやすく
     DROP_RADIUS: 150,      // px to trigger thaw_friend
     THAW_THRESHOLD: 25,    // bodyTemp to unfreeze at
 };

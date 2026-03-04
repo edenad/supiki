@@ -11,41 +11,54 @@ export function initGameUI() {
 
 export function updateGameUI() {
     state.mates.forEach(mate => {
+        // スピキのDOM要素を取得
+        const mateEl = document.getElementById(`mate-${mate.id}`);
+        if (!mateEl) return;
+
         let els = gauges.get(mate.id);
 
         if (!els) {
             const wrapper = document.createElement('div');
-            wrapper.style.cssText = 'position:absolute;pointer-events:none;display:flex;flex-direction:column;align-items:center;transform:translateX(-50%);z-index:999;';
+            // position: absolute, parent is mateEl (which is already absolutely positioned)
+            wrapper.style.cssText = [
+                'position:absolute',
+                'left:50%',
+                'transform:translateX(-50%)',
+                'pointer-events:none',
+                'z-index:9999',
+                'bottom:88%',  // 頭上あたり
+            ].join(';');
 
             const track = document.createElement('div');
-            track.style.cssText = 'width:44px;height:7px;background:rgba(0,0,0,0.35);border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,0.25);';
+            track.style.cssText = 'width:44px;height:7px;background:rgba(0,0,0,0.45);border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,0.3);';
 
             const fill = document.createElement('div');
-            fill.style.cssText = 'height:100%;width:100%;border-radius:4px;transition:width 0.15s,background 0.3s;';
+            fill.style.cssText = 'height:100%;width:100%;border-radius:4px;transition:width 0.12s,background 0.25s;';
             track.appendChild(fill);
             wrapper.appendChild(track);
-            if (container) container.appendChild(wrapper);
-            els = { wrapper, fill };
+            mateEl.appendChild(wrapper);
+            els = { wrapper, fill, mateId: mate.id };
             gauges.set(mate.id, els);
         }
 
+        // DOM親が変わっていたら再アタッチ
+        if (els.wrapper.parentElement !== mateEl) {
+            mateEl.appendChild(els.wrapper);
+        }
+
         const pct = Math.max(0, Math.min(100, mate.bodyTemp ?? 100));
-        const posX = mate.screenX;
-        const posY = mate.screenY - (mate.size || 80) * 0.7;
-        els.wrapper.style.left = `${posX}px`;
-        els.wrapper.style.top = `${posY}px`;
 
         let color;
-        if (mate.gameFrozen) color = '#60a5fa';  // blue - frozen
-        else if (pct > 66) color = '#22c55e';  // green - warm
-        else if (pct > 33) color = '#f59e0b';  // amber - cool
-        else color = '#ef4444';  // red - cold
+        if (mate.gameFrozen) color = '#93c5fd'; // blue frozen
+        else if (pct > 66) color = '#22c55e'; // green
+        else if (pct > 33) color = '#f59e0b'; // amber
+        else color = '#ef4444'; // red
 
         els.fill.style.width = `${pct}%`;
         els.fill.style.background = color;
     });
 
-    // Remove gauges for deleted mates
+    // 削除済みmateのゲージを除去
     for (const [id, els] of gauges.entries()) {
         if (!state.mates.find(m => m.id === id)) {
             els.wrapper.remove();

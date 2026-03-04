@@ -103,7 +103,10 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
     // Recovery
     if (mate.state !== STATES.DRAGGED) {
         mate.shakeStress = 0;
-        if (Math.random() < 0.000006 && mate.emotion < 3) {
+        // Game mode: keep emotion at 0
+        if (state.gameMode) {
+            mate.emotion = 0;
+        } else if (Math.random() < 0.000006 && mate.emotion < 3) {
             mate.emotion += 1;
         }
     }
@@ -289,15 +292,15 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
             vx *= 0.8; vz *= 0.8;
             mate.stateTimer--;
 
-            // --- Spontaneous Dig Trigger (per-frame, 1/3600 when no food) ---
-            if (!mate.walkingToEat && !mate.targetObjectId && mate.interactionCooldown <= 0) {
+            // --- Spontaneous Dig Trigger (disabled in game mode) ---
+            if (!state.gameMode && !mate.walkingToEat && !mate.targetObjectId && mate.interactionCooldown <= 0) {
                 const hasFood = state.objects.some(o => o.type === 'food');
                 if (!hasFood && Math.random() < 1 / 3600) {
                     mate.state = STATES.INTERACT;
                     mate.edgeAction = 'dig';
                     mate.digAngle = 30 + Math.random() * 30;
-                    mate.actionTimer = 90 + Math.random() * 90; // ~2-3s digging
-                    mate.stateTimer = Math.max(mate.stateTimer, 60); // Ensure enough time
+                    mate.actionTimer = 90 + Math.random() * 90;
+                    mate.stateTimer = Math.max(mate.stateTimer, 60);
                     vx = 0; vz = 0;
                 }
             }
@@ -327,11 +330,8 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                     return;
                 }
 
-                // Check for nearby objects
-                let targetObj = null;
-                let minDist = 9999;
-
-                if (state.objects.length > 0) {
+                // Check for nearby objects (disabled in game mode)
+                if (!state.gameMode && state.objects.length > 0) {
                     let bestTarget = null;
                     let minWeightedDist = 9999;
 
@@ -392,75 +392,81 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                 }
 
                 // Check for nearby frozen mates (User Request: "Face, Startle, Run")
-                const nearbyFrozen = state.mates.find(m => m.id !== mate.id && m.isFrozen && !mate.isRunningAway);
-                if (nearbyFrozen) {
-                    const dx = nearbyFrozen.x - x;
-                    const dz = nearbyFrozen.z - z;
-                    const dist = Math.sqrt(dx * dx + dz * dz);
-
-                    if (dist < 100) { // Reaction range
-                        // 1. Face them
-                        mate.direction = dx > 0 ? 1 : -1;
-
-                        // 2. Startle Motion (One-shot via specialized transient state or just modifying vars?)
-                        // Spikey uses "INTERACT" state to play Startle. Let's do that.
-                        // We need a dummy object or a special logic. 
-                        // Or we can just set state=INTERACT and handle it manually.
-                        // But INTERACT usually requires targetObjectId.
-                        // Let's create a "FrozenReact" Pseudo-Object or handle it in INTERACT generic?
-                        // Simpler: Set specialized variables and use INTERACT without ID, or a special ID.
-                        // ACTUALLY: Let's use a "reactionTarget" property on mate to distinguishing.
-
-                        mate.state = STATES.INTERACT;
-                        mate.reactionTargetId = nearbyFrozen.id;
-                        mate.reactionType = 'frozen_scare';
-                        mate.actionTimer = 0;
-                        mate.vx = 0; mate.vz = 0;
-                        return; // Break IDLE loop
-                    }
-                }
-
-                // Check for nearby mates to interact with
-                if (!mate.walkingToEat && mate.interactionCooldown <= 0 && !mate.isRunningAway) {
-                    const nearbyMate = state.mates.find(m => {
-                        if (m.id === mate.id || m.state !== STATES.IDLE || m.interactionCooldown > 0 || m.reactionTargetId || m.isRunningAway || m.walkingToEat) {
-                            return false;
-                        }
-                        const dx = m.x - mate.x;
-                        const dz = m.z - mate.z;
+                // --- Game mode: skip all interactions except thaw_friend (handled by drop event) ---
+                if (state.gameMode) {
+                    // Just walk / idle - no interactions
+                } else {
+                    const nearbyFrozen = state.mates.find(m => m.id !== mate.id && m.isFrozen && !mate.isRunningAway);
+                    if (nearbyFrozen) {
+                        const dx = nearbyFrozen.x - x;
+                        const dz = nearbyFrozen.z - z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
-                        return dist < 200; // Interaction range 200
-                    });
 
-                    if (nearbyMate) {
-                        // Initiate interaction for both
-                        mate.state = STATES.INTERACT;
-                        mate.reactionTargetId = nearbyMate.id;
-                        mate.actionTimer = 0;
+                        if (dist < 100) { // Reaction range
+                            // 1. Face them
+                            mate.direction = dx > 0 ? 1 : -1;
 
-                        nearbyMate.state = STATES.INTERACT;
-                        nearbyMate.reactionTargetId = mate.id;
-                        nearbyMate.actionTimer = 0;
+                            // 2. Startle Motion (One-shot via specialized transient state or just modifying vars?)
+                            // Spikey uses "INTERACT" state to play Startle. Let's do that.
+                            // We need a dummy object or a special logic. 
+                            // Or we can just set state=INTERACT and handle it manually.
+                            // But INTERACT usually requires targetObjectId.
+                            // Let's create a "FrozenReact" Pseudo-Object or handle it in INTERACT generic?
+                            // Simpler: Set specialized variables and use INTERACT without ID, or a special ID.
+                            // ACTUALLY: Let's use a "reactionTarget" property on mate to distinguishing.
 
-                        // Determine type based on emotion
-                        const e1 = mate.emotion;
-                        const e2 = nearbyMate.emotion;
-                        let type = 'greet';
-
-                        if ((e1 === 0 && e2 >= 2) || (e2 === 0 && e1 >= 2)) {
-                            type = 'suri_suri';
-                        } else if (e1 <= 1 && e2 <= 1) {
-                            type = 'dance';
+                            mate.state = STATES.INTERACT;
+                            mate.reactionTargetId = nearbyFrozen.id;
+                            mate.reactionType = 'frozen_scare';
+                            mate.actionTimer = 0;
+                            mate.vx = 0; mate.vz = 0;
+                            return; // Break IDLE loop
                         }
-
-                        // Enter approach phase first
-                        mate.reactionType = 'approach_mate';
-                        mate.nextReactionType = type;
-                        nearbyMate.reactionType = 'approach_mate';
-                        nearbyMate.nextReactionType = type;
-                        return; // Break IDLE loop
                     }
-                }
+
+                    // Check for nearby mates to interact with
+                    if (!mate.walkingToEat && mate.interactionCooldown <= 0 && !mate.isRunningAway) {
+                        const nearbyMate = state.mates.find(m => {
+                            if (m.id === mate.id || m.state !== STATES.IDLE || m.interactionCooldown > 0 || m.reactionTargetId || m.isRunningAway || m.walkingToEat) {
+                                return false;
+                            }
+                            const dx = m.x - mate.x;
+                            const dz = m.z - mate.z;
+                            const dist = Math.sqrt(dx * dx + dz * dz);
+                            return dist < 200; // Interaction range 200
+                        });
+
+                        if (nearbyMate) {
+                            // Initiate interaction for both
+                            mate.state = STATES.INTERACT;
+                            mate.reactionTargetId = nearbyMate.id;
+                            mate.actionTimer = 0;
+
+                            nearbyMate.state = STATES.INTERACT;
+                            nearbyMate.reactionTargetId = mate.id;
+                            nearbyMate.actionTimer = 0;
+
+                            // Determine type based on emotion
+                            const e1 = mate.emotion;
+                            const e2 = nearbyMate.emotion;
+                            let type = 'greet';
+
+                            if ((e1 === 0 && e2 >= 2) || (e2 === 0 && e1 >= 2)) {
+                                type = 'suri_suri';
+                            } else if (e1 <= 1 && e2 <= 1) {
+                                type = 'dance';
+                            }
+
+                            // Enter approach phase first
+                            mate.reactionType = 'approach_mate';
+                            mate.nextReactionType = type;
+                            nearbyMate.reactionType = 'approach_mate';
+                            nearbyMate.nextReactionType = type;
+                            return; // Break IDLE loop
+                        }
+                    }
+
+                } // end !state.gameMode block
 
                 // If we didn't start interacting, decide normal behavior
                 // Only act if cooldown is done and not walking to eat

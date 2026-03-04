@@ -20,7 +20,7 @@ export const state = {
     ui: {
         showControls: true,
         selectedMateId: null,
-        showDebugZones: true
+        showDebugZones: false
     },
     time: 0,
     objects: [], // Array of { id, type, x, z, amount, maxAmount }
