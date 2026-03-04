@@ -41,7 +41,7 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
     }
 
     // Self-healing: Clear Frozen if not interacting and no cooldown
-    if (mate.isFrozen && mate.interactionCooldown <= 0 && mate.state !== STATES.INTERACT) {
+    if (mate.isFrozen && !mate.gameFrozen && mate.interactionCooldown <= 0 && mate.state !== STATES.INTERACT) {
         mate.isFrozen = false;
         mate.frozenCooldown = false;
     }
@@ -60,7 +60,7 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
             });
         }
         // If pulled away from Ice or Ice is removed, cure frozen state immediately
-        if (!isNearIce) {
+        if (!isNearIce && !mate.gameFrozen) {
             mate.isFrozen = false;
             mate.frozenCooldown = false;
             if (mate.state !== STATES.INTERACT) {
@@ -759,6 +759,41 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                     mate.scaleY = 1;
                     mate.offsetY = 0;
                     mate.interactionCooldown = 180; // Reset to original 3s cooldown
+                }
+            }
+            else if (mate.reactionType === 'thaw_friend') {
+                const target = state.mates.find(m => m.id === mate.reactionTargetId);
+                if (!target || !target.gameFrozen) {
+                    // Target thawed or gone – stop helping
+                    mate.state = STATES.IDLE;
+                    mate.stateTimer = 60;
+                    mate.reactionType = null;
+                    mate.reactionTargetId = null;
+                    mate.skewX = 0; mate.offsetY = 0;
+                    vx = 0; vz = 0;
+                } else {
+                    mate.actionTimer++;
+                    const dx = target.x - mate.x;
+                    const dz = target.z - mate.z;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist > 50) {
+                        // Approach
+                        const spd = 2.5;
+                        const angle = Math.atan2(dz, dx);
+                        vx = Math.cos(angle) * spd;
+                        vz = Math.sin(angle) * spd;
+                        mate.direction = vx > 0 ? 1 : -1;
+                        mate.offsetY = -Math.abs(Math.sin(mate.actionTimer * 0.3)) * 5;
+                    } else {
+                        // Rub!
+                        vx = 0; vz = 0;
+                        mate.direction = dx > 0 ? 1 : -1;
+                        mate.skewX = Math.sin(mate.actionTimer * 0.5) * 15 * mate.direction;
+                        mate.offsetY = 0;
+                        if (target.bodyTemp !== undefined) {
+                            target.bodyTemp = Math.min(100, target.bodyTemp + 0.8);
+                        }
+                    }
                 }
             }
             else if (mate.targetObjectId) {

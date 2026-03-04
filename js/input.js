@@ -13,7 +13,18 @@ export function handleMateMouseDown(e, id) {
 
     // Correct Z snap
     const mate = state.mates.find(m => m.id === id);
-    if (mate) mate.z = getSnappedZ(mate.z);
+    if (mate) {
+        mate.z = getSnappedZ(mate.z);
+
+        // Instantly thaw frozen mates when grabbed (non-game mode only)
+        if (!state.gameMode && (mate.isFrozen || mate.frozenCooldown)) {
+            mate.isFrozen = false;
+            mate.frozenCooldown = false;
+            mate.interactionCooldown = 0;
+            mate.state = STATES.IDLE;
+            mate.stateTimer = 30;
+        }
+    }
 
     state.drag.isDragging = true;
     state.drag.id = id;
@@ -23,12 +34,15 @@ export function handleMateMouseDown(e, id) {
     state.drag.velocityScreenY = 0;
 }
 
+
 export function handleGlobalMouseMove(e) {
     const clientX = e.clientX || e.touches?.[0]?.clientX;
     const clientY = e.clientY || e.touches?.[0]?.clientY;
 
     // Update generic mouse pos
     if (clientX) {
+        state.mouse.vx = clientX - state.mouse.x;
+        state.mouse.vy = clientY - state.mouse.y;
         state.mouse.x = clientX;
         state.mouse.y = clientY;
     }
@@ -123,6 +137,11 @@ export function handleGlobalMouseUp(e) {
     } else {
         mate.state = STATES.JUMP;
         mate.stateTimer = 0;
+    }
+
+    // Game mode: notify drop near frozen mates
+    if (state.gameMode && mate.h <= 0) {
+        window.dispatchEvent(new CustomEvent('mate-dropped', { detail: { mateId: mate.id } }));
     }
 
     state.drag.isDragging = false;

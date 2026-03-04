@@ -10,6 +10,7 @@ import { handleGlobalMouseMove, handleGlobalMouseUp } from './input.js';
 import { drawGrid, updateDebugOverlay } from './debug.js';
 
 import { updateGroups } from './group/GroupManager.js';
+import { updateGame, startGame, stopGame } from './game/GameManager.js';
 
 // Expose to window for HTML handlers and console debugging
 window.addMate = addMate;
@@ -19,6 +20,8 @@ window.removeMate = removeMate;
 window.showMateInfo = showMateInfo;
 window.spawnObject = spawnObject;
 window.state = state;
+window.startGame = startGame;
+window.stopGame = stopGame;
 
 // Initialize Listeners
 document.addEventListener('mousemove', handleGlobalMouseMove);
@@ -58,6 +61,8 @@ function animate() {
 
     updateInspector();
     if (state.ui.showDebugZones) updateDebugOverlay();
+
+    updateGame();
 
     requestAnimationFrame(animate);
 }

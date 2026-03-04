@@ -6,7 +6,7 @@ export const state = {
         friction: 0.95,
         bounce: 0.4
     },
-    mouse: { x: 0, y: 0 },
+    mouse: { x: 0, y: 0, vx: 0, vy: 0 },
     drag: {
         isDragging: false,
         id: null,
@@ -29,5 +29,6 @@ export const state = {
         viewScale: 1,
         viewOffsetX: 0,
         viewOffsetY: 0
-    }
+    },
+    gameMode: false // true = game mode active
 };
