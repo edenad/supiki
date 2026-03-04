@@ -473,10 +473,15 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                 if (!mate.walkingToEat && mate.interactionCooldown <= 0) {
 
                     // Possible behaviors
-                    const behaviors = ['walk', 'jump', 'dig']; // base
+                    let behaviors = ['walk', 'jump', 'dig']; // base
                     if (mate.emotion === 0) behaviors.push('look');
                     if (mate.emotion >= 2) behaviors.push('stretch', 'dance');
                     if (mate.emotion >= 3) behaviors.push('spin');
+
+                    // --- ゲームモード制約：「ただ動き回るだけ」 ---
+                    if (state.gameMode) {
+                        behaviors = ['walk', 'jump'];
+                    }
 
                     // Weighted selection
                     // Previously Walk probability was proportional to wisdom.
@@ -523,6 +528,9 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                             mate.vx = 0; mate.vz = 0;
                         }
                     }
+
+                    // 安全策: stateTimer が10秒(600フレーム)を超えないようにする
+                    if (mate.stateTimer > 600) mate.stateTimer = 600;
                 }
             }
         }
@@ -827,9 +835,11 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                     // Only force IDLE if the interaction didn't transition to another state (like JUMP)
                     if (mate.state === STATES.INTERACT) {
                         mate.state = STATES.IDLE;
+                        mate.stateTimer = 60 + Math.random() * 60;
                     }
 
                     mate.targetObjectId = null;
+                    mate.walkingToEat = false;
                     if (mate.interactionCooldown <= 0) {
                         mate.interactionCooldown = 300; // Default 5 seconds blank
                     }
