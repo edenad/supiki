@@ -5,6 +5,7 @@ import { container } from '../dom.js';
 import { createMateElement } from '../mate/MateVisuals.js';
 import { initGameUI, updateGameUI, showGameOver, hideGameUI } from './GameUI.js';
 import { updateCountDisplay } from '../ui.js';
+import { trySpeak, getPan } from '../sound/SoundManager.js';
 
 const CFG = {
     DECAY_BASE: 0.01515,   // Base decay per frame
@@ -162,6 +163,8 @@ export function updateGame() {
                 mate.reactionType = null;
                 mate.reactionTargetId = null;
                 mate.targetObjectId = null;
+                trySpeak(mate.id, 'STARTLE', { minInterval: 1000, pan: getPan(mate) });
+                setTimeout(() => trySpeak(mate.id, 'FREEZE', { minInterval: 500, pan: getPan(mate) }), 700);
             }
         } else {
             // マウスでこすると回復 (仕事量2倍: MOUSE_GAIN=0.25)

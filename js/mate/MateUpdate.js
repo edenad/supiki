@@ -692,6 +692,10 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                     vx = 0; vz = 0; mate.offsetY = 0;
                     mate.reactionType = mate.nextReactionType; // Proceed to suri_suri, dance, or greet
                     mate.actionTimer = 0;
+
+                    // 両者がポジティブなセリフを言う
+                    trySpeak(mate.id, 'INTERACT', { minInterval: 1000, pan: getPan(mate) });
+                    if (target) trySpeak(target.id, 'INTERACT', { minInterval: 1000, pan: getPan(target) });
                 }
             }
             else if (mate.reactionType === 'suri_suri' || mate.reactionType === 'dance' || mate.reactionType === 'greet') {

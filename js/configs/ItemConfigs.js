@@ -394,6 +394,7 @@ export const ITEM_CONFIGS = {
             mate.emotion = Math.min(3, mate.emotion + 1); // Happy
             mate.actionTimer = 0;
             mate.scaleX = 1; mate.scaleY = 1;
+            trySpeak(mate.id, 'PUMPKIN', { minInterval: 2000, volume: 0.9, pan: getPan(mate) });
         },
         onInteractTick: (mate, obj) => {
             mate.actionTimer++;
@@ -423,6 +424,8 @@ export const ITEM_CONFIGS = {
             mate.emotion = 0; // Sad/Crying
             mate.actionTimer = 0;
             mate.scaleX = 1; mate.scaleY = 1; mate.rotation = 0;
+            trySpeak(mate.id, 'STARTLE', { minInterval: 1500, pan: getPan(mate) }); // 驚いて
+            setTimeout(() => trySpeak(mate.id, 'FREEZE', { minInterval: 500, pan: getPan(mate) }), 800); // 凍る音
         },
         onInteractTick: (mate, obj) => {
             mate.actionTimer++;
