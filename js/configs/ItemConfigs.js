@@ -1,7 +1,7 @@
 import { STATES, IMAGES } from '../constants.js';
 import { MOTIONS } from './MotionConfigs.js';
 import { state } from '../state.js';
-import { trySpeak } from '../sound/SoundManager.js';
+import { trySpeak, getPan } from '../sound/SoundManager.js';
 
 export const ITEM_CONFIGS = {
     FOOD: {
@@ -33,7 +33,7 @@ export const ITEM_CONFIGS = {
             if (obj.foodType === 'bad') {
                 mate.emotion = 0;
                 // Immediate Startle
-                trySpeak(mate.id, 'STARTLE', { minInterval: 2000 }); // 不味い！驚く
+                trySpeak(mate.id, 'STARTLE', { minInterval: 2000, pan: getPan(mate) });
                 // We'll handle this in Tick to play animation
             } else {
                 mate.scaleX = 1; mate.scaleY = 1; mate.rotation = 0;
@@ -88,7 +88,7 @@ export const ITEM_CONFIGS = {
                     boost = 2;
                 }
                 mate.emotion = Math.min(3, mate.emotion + boost);
-                trySpeak(mate.id, 'HAPPY', { minInterval: 3000 }); // おいしい！
+                trySpeak(mate.id, 'HAPPY', { minInterval: 3000, pan: getPan(mate) }); // おいしい！
                 return true;
             }
             return false;
@@ -188,7 +188,7 @@ export const ITEM_CONFIGS = {
             }
             // Immediate Startle Reaction (Emotion Drop)
             mate.emotion = 0;
-            trySpeak(mate.id, 'STARTLE', { minInterval: 2000 }); // スピッキーに驚く
+            trySpeak(mate.id, 'STARTLE', { minInterval: 2000, pan: getPan(mate) }); // スピッキーに驚く
         },
         onInteractTick: (mate, obj) => {
             mate.actionTimer++;
