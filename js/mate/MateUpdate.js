@@ -4,6 +4,7 @@ import { getSnappedZ } from '../utils.js';
 import { updateMateElement } from './MateVisuals.js';
 import { MOTIONS } from '../configs/MotionConfigs.js';
 import { CollisionSystem } from '../systems/CollisionSystem.js';
+import { maybeSpeakIdle, trySpeak } from '../sound/SoundManager.js';
 
 /**
  * Calculates approach velocity towards an object.
@@ -292,6 +293,9 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
         if (currentState === STATES.IDLE) {
             vx *= 0.8; vz *= 0.8;
             mate.stateTimer--;
+
+            // ランダムつぶやき (感情により種別が変わる)
+            maybeSpeakIdle(mate);
 
             // --- Spontaneous Dig Trigger (disabled in game mode) ---
             if (!state.gameMode && !mate.walkingToEat && !mate.targetObjectId && mate.interactionCooldown <= 0) {

@@ -11,6 +11,7 @@ import { drawGrid, updateDebugOverlay } from './debug.js';
 
 import { updateGroups } from './group/GroupManager.js';
 import { updateGame, startGame, stopGame } from './game/GameManager.js';
+import { preloadSounds } from './sound/SoundManager.js';
 
 // Expose to window for HTML handlers and console debugging
 window.addMate = addMate;
@@ -25,6 +26,10 @@ window.stopGame = stopGame;
 
 // Initialize Listeners
 document.addEventListener('mousemove', handleGlobalMouseMove);
+
+// 音声クリップをプリロード (最初のクリックで AudioContext が解除される)
+document.addEventListener('click', () => preloadSounds(), { once: true });
+
 document.addEventListener('touchmove', handleGlobalMouseMove, { passive: false });
 document.addEventListener('mouseup', handleGlobalMouseUp);
 document.addEventListener('touchend', handleGlobalMouseUp);

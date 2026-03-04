@@ -2,6 +2,7 @@ import { IMAGES, CONSTANTS, STATES } from '../constants.js';
 import { state } from '../state.js';
 import { handleMateMouseDown } from '../input.js';
 import { showMateInfo } from '../ui.js';
+import { trySpeak } from '../sound/SoundManager.js';
 
 export function createMateElement(mate) {
     const el = document.createElement('div');
@@ -71,6 +72,9 @@ export function createMateElement(mate) {
         m.walkingToEat = false;
         m.targetObjectId = null;
         m.groupId = null;
+
+        // 驚き発話
+        trySpeak(m.id, 'STARTLE', { minInterval: 1500 });
 
         // Emotion hit (rotation-only flick - no scale/aspect ratio change)
         m.emotion = Math.max(0, m.emotion - 1);
