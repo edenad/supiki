@@ -1041,6 +1041,10 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                         if (obj.addInteractor(mate.id)) {
                             mate.state = STATES.INTERACT;
                             mate.scaleX = 1; mate.scaleY = 1; mate.rotation = 0;
+
+                            const dx = obj.x - x;
+                            mate.direction = dx >= 0 ? 1 : -1;
+
                             if (obj.onInteractStart) obj.onInteractStart(mate, obj);
                         } else {
                             // Capacity Full - Abort

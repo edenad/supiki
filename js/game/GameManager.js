@@ -12,7 +12,7 @@ const CFG = {
     MOUSE_RADIUS: 120,     // px in container-local coords
     MOUSE_MIN_SPEED: 2,    // px/frame - 低めにして当たりやすく
     DROP_RADIUS: 150,      // px to trigger thaw_friend
-    THAW_THRESHOLD: 25,    // bodyTemp to unfreeze at
+    THAW_THRESHOLD: 100,   // bodyTemp to unfreeze at
 };
 
 let gameActive = false;
