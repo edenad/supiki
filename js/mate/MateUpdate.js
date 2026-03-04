@@ -76,21 +76,22 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
         if (mate.frozenCooldown) {
             mate.isFrozen = true;
             MOTIONS.FREEZE.update(mate, mate.interactionCooldown); // Or any timer
+            if (!(mate.id === state.drag.id && state.drag.isDragging)) {
+                // Recalculate screen positioning even if frozen (for camera/resize validity)
+                const depthRatio = mate.z / CONSTANTS.DEPTH_RANGE;
+                const perspectiveScale = 1.0 - depthRatio * (1.0 - CONSTANTS.MIN_SCALE);
+                const centerX = containerWidth / 2;
+                const relativeX = mate.x - centerX;
+                const visualX = centerX + relativeX * perspectiveScale;
+                // Assuming h=0 if frozen usually, or keep current h
+                const visualY = containerHeight - mate.size - mate.z - mate.h;
+                mate.perspectiveScale = perspectiveScale;
+                mate.screenX = visualX;
+                mate.screenY = visualY;
 
-            // Recalculate screen positioning even if frozen (for camera/resize validity)
-            const depthRatio = mate.z / CONSTANTS.DEPTH_RANGE;
-            const perspectiveScale = 1.0 - depthRatio * (1.0 - CONSTANTS.MIN_SCALE);
-            const centerX = containerWidth / 2;
-            const relativeX = mate.x - centerX;
-            const visualX = centerX + relativeX * perspectiveScale;
-            // Assuming h=0 if frozen usually, or keep current h
-            const visualY = containerHeight - mate.size - mate.z - mate.h;
-            mate.perspectiveScale = perspectiveScale;
-            mate.screenX = visualX;
-            mate.screenY = visualY;
-
-            updateMateElement(mate);
-            return; // Skip other updates completely to stay put
+                updateMateElement(mate);
+                return; // Skip other updates completely to stay put
+            }
         }
     } else {
         // Cooldown Ended
