@@ -4,12 +4,12 @@ import { spawnSingleMate, clearAllMates } from '../mate/MateLogic.js';
 import { initGameUI, updateGameUI, showGameOver, hideGameUI } from './GameUI.js';
 
 const CFG = {
-    DECAY: 0.025,          // bodyTemp loss per frame (~67s to freeze)
-    MOUSE_GAIN: 1.5,       // bodyTemp gain when mouse-rubbing
+    DECAY_BASE: 0.01515,   // Base decay. 平均5.5倍の乗数で毎フレーム0.083減少 (20sで100)
+    MOUSE_GAIN: 0.334,     // 5s(300f)で100回復
     SPAWN_FRAMES: 7200,    // 120s at 60fps
     MAX_MATES: 20,
     INITIAL_MATES: 4,
-    MOUSE_RADIUS: 90,      // px in container-local coords
+    MOUSE_RADIUS: 120,     // px in container-local coords
     MOUSE_MIN_SPEED: 4,    // px/frame
     DROP_RADIUS: 150,      // px to trigger thaw_friend
     THAW_THRESHOLD: 25,    // bodyTemp to unfreeze at
@@ -77,10 +77,11 @@ export function updateGame() {
 
     state.mates.forEach(mate => {
         if (mate.bodyTemp === undefined) mate.bodyTemp = 100;
+        if (mate.decayMultiplier === undefined) mate.decayMultiplier = 1.0 + Math.random() * 9.0;
         if (mate.id === state.drag.id && state.drag.isDragging) return;
 
         if (!mate.gameFrozen) {
-            mate.bodyTemp = Math.max(0, mate.bodyTemp - CFG.DECAY);
+            mate.bodyTemp = Math.max(0, mate.bodyTemp - (CFG.DECAY_BASE * mate.decayMultiplier));
             if (mate.bodyTemp <= 0) {
                 mate.isFrozen = true;
                 mate.frozenCooldown = true;

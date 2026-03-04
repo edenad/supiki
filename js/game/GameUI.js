@@ -31,7 +31,7 @@ export function updateGameUI() {
 
         const pct = Math.max(0, Math.min(100, mate.bodyTemp ?? 100));
         const posX = mate.screenX;
-        const posY = mate.screenY - (mate.size || 80) * 1.05;
+        const posY = mate.screenY - (mate.size || 80) * 0.7;
         els.wrapper.style.left = `${posX}px`;
         els.wrapper.style.top = `${posY}px`;
 
