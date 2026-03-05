@@ -4,7 +4,7 @@ import { getSnappedZ } from '../utils.js';
 import { updateMateElement } from './MateVisuals.js';
 import { MOTIONS } from '../configs/MotionConfigs.js';
 import { CollisionSystem } from '../systems/CollisionSystem.js';
-import { maybeSpeakIdle, trySpeak } from '../sound/SoundManager.js';
+import { maybeSpeakIdle, trySpeak, getPan } from '../sound/SoundManager.js';
 
 /**
  * Calculates approach velocity towards an object.
