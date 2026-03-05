@@ -74,8 +74,8 @@ export function createMateElement(mate) {
         m.targetObjectId = null;
         m.groupId = null;
 
-        // 驚き発話
-        trySpeak(m.id, 'STARTLE', { minInterval: 1500, pan: getPan(m) });
+        // 驚き発話 (デコピン専用)
+        trySpeak(m.id, 'DEKOPIN', { minInterval: 1500, pan: getPan(m) });
 
         // 好感度DOWN (デコピン)
         m.friendliness = Math.max(-10, (m.friendliness || 0) - 1);
@@ -107,7 +107,6 @@ export function createMateElement(mate) {
 
     el.addEventListener('mousemove', (e) => {
         if (state.drag.isDragging) return;
-        if ((state.cursor?.mode || 'grab') !== 'pet') return;
 
         const m = state.mates.find(x => x.id === mate.id);
         if (!m) return;

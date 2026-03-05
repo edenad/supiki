@@ -167,6 +167,7 @@ export const ITEM_CONFIGS = {
         type: 'spikey',
         src: "pictures/スピッキー.png",
         text: '🌵',
+        detectionRadius: 150,
         width: 2, // Spikey 1.5x of 40px ~= 60px -> 2 tiles needed to fit or just visually bigger?
         // User said "1.5 times size". 
         // 40px * 1.5 = 60px. Tiles are 50px.

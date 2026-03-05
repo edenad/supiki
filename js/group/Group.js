@@ -17,6 +17,7 @@ export class Group {
 
         // Timer for decisions
         this.decisionTimer = 0;
+        this.lifetimeFrames = 3600 + Math.random() * 7200; // 60s ~ 180s
 
         // Visual Debug
         this.debugDot = document.createElement('div');
@@ -157,6 +158,11 @@ export class Group {
 
         // 5. State & Movement Logic
         this.decisionTimer--;
+        this.lifetimeFrames--;
+        if (this.lifetimeFrames <= 0) {
+            this.dissolve();
+            return;
+        }
 
         // Sync Group State -> Leader State (Leader drives the group)
         // Actually Group drives the Leader, Leader drives the followers
@@ -201,8 +207,8 @@ export class Group {
                     const rx = -vz;
                     const rz = vx;
 
-                    const SPACING_DEPTH = 40;
-                    const SPACING_WIDTH = 30;
+                    const SPACING_DEPTH = 20;
+                    const SPACING_WIDTH = 20;
 
                     // Show/Hide Debug Dot based on global setting
                     this.debugDot.style.display = state.ui.showDebugZones ? 'flex' : 'none';
@@ -273,8 +279,8 @@ export class Group {
                 const rx = -vz;
                 const rz = vx;
 
-                const SPACING_DEPTH = 40;
-                const SPACING_WIDTH = 30;
+                const SPACING_DEPTH = 20;
+                const SPACING_WIDTH = 20;
 
                 const followers = this.members.filter(id => id !== this.leaderId);
 

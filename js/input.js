@@ -5,8 +5,6 @@ import { container } from './dom.js';
 import { ObjectInputHandler } from './systems/ObjectInputHandler.js';
 
 export function handleMateMouseDown(e, id) {
-    // なでるモードのときは掴みを無効化
-    if ((state.cursor?.mode || 'grab') === 'pet') return;
 
     if (e.cancelable) e.preventDefault(); // Prevent text selection etc
     const clientX = e.clientX || e.touches?.[0]?.clientX;

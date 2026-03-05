@@ -241,7 +241,8 @@ export class InteractableObject {
         const left = visualX - (this.size / 2);
 
         this.element.style.transform = `translate3d(${left}px, ${visualY}px, 0) scale(${scale})`;
-        this.element.style.zIndex = Math.floor(visualY + (isDragging ? 1000 : 0)); // Lift up when dragging
+        const footY = containerHeight - targetZ; // offsetX抜きの足元Y
+        this.element.style.zIndex = Math.floor(footY + (isDragging ? 1000 : 0));
 
         // --- 2. Update Ghost Element (Snapped Indicator) ---
         // Removed as per user request (no white circle when dragging)

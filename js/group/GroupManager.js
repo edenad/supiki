@@ -102,6 +102,8 @@ export function updateGroups() {
     // Need at least MIN_GROUP_SIZE mates to form a group
     if (availableMates.length < CONSTANTS.MIN_GROUP_SIZE) return;
 
+    if (Math.random() >= 0.002) return; // Reduce formation frequency
+
     // Checked set to avoid re-checking
     const checked = new Set();
 
