@@ -25,7 +25,8 @@ function makeMateData(source, type, containerWidth) {
         emotion: Math.floor(Math.random() * 4),
         courage: isChild ? Math.floor(Math.random() * 3) + 1 : Math.floor(Math.random() * 5) + 1,
         wisdom: isChild ? Math.floor(Math.random() * 3) + 1 : Math.floor(Math.random() * 5) + 1,
-        friendliness: 0, shakeStress: 0, eatCooldown: 0, groupId: null,
+        friendliness: Math.floor(Math.random() * 5) + 1, // 初期値 1~5
+        shakeStress: 0, eatCooldown: 0, groupId: null,
         bodyTemp: 100  // Game mode temperature gauge
     };
 }

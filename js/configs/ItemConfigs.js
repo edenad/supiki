@@ -424,8 +424,7 @@ export const ITEM_CONFIGS = {
             mate.emotion = 0; // Sad/Crying
             mate.actionTimer = 0;
             mate.scaleX = 1; mate.scaleY = 1; mate.rotation = 0;
-            trySpeak(mate.id, 'STARTLE', { minInterval: 1500, pan: getPan(mate) }); // 驚いて
-            setTimeout(() => trySpeak(mate.id, 'FREEZE', { minInterval: 500, pan: getPan(mate) }), 800); // 凍る音
+            trySpeak(mate.id, 'FREEZE', { minInterval: 500, pan: getPan(mate) }); // 凍る音(ﾋﾟｷのみ)
         },
         onInteractTick: (mate, obj) => {
             mate.actionTimer++;

@@ -5,6 +5,9 @@ import { container } from './dom.js';
 import { ObjectInputHandler } from './systems/ObjectInputHandler.js';
 
 export function handleMateMouseDown(e, id) {
+    // なでるモードのときは掴みを無効化
+    if ((state.cursor?.mode || 'grab') === 'pet') return;
+
     if (e.cancelable) e.preventDefault(); // Prevent text selection etc
     const clientX = e.clientX || e.touches?.[0]?.clientX;
     const clientY = e.clientY || e.touches?.[0]?.clientY;
@@ -129,6 +132,11 @@ export function handleGlobalMouseUp(e) {
 
     mate.scaleX = 1;
     mate.scaleY = 1;
+
+    // 高く飛ばしたとき好感度DOWN
+    if (mate.vh > 8) {
+        mate.friendliness = Math.max(-10, (mate.friendliness || 0) - 1);
+    }
 
     if (mate.h <= 0 && Math.abs(mate.vh) < 2 && Math.abs(mate.vx) < 2) {
         mate.state = STATES.IDLE;

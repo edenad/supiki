@@ -103,3 +103,19 @@ export function toggleGameMode() {
     }
 }
 window.toggleGameMode = toggleGameMode;
+
+export function toggleCursorMode() {
+    const btn = document.getElementById('cursor-mode-btn');
+    if (!state.cursor) state.cursor = { mode: 'grab' };
+
+    if (state.cursor.mode === 'grab') {
+        state.cursor.mode = 'pet';
+        if (btn) { btn.textContent = '🖐'; btn.title = '掴むモードに切り替え'; }
+        document.body.style.cursor = 'default';
+    } else {
+        state.cursor.mode = 'grab';
+        if (btn) { btn.textContent = '🤜'; btn.title = 'なでるモードに切り替え'; }
+        document.body.style.cursor = '';
+    }
+}
+window.toggleCursorMode = toggleCursorMode;

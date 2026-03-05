@@ -32,5 +32,6 @@ export const state = {
     },
     gameMode: false, // true = game mode active
     // Normal mode snapshot (restored when leaving game mode)
-    savedNormalState: null
+    savedNormalState: null,
+    cursor: { mode: 'grab' } // 'grab' or 'pet'
 };

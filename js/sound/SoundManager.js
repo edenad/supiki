@@ -5,8 +5,10 @@
  * カテゴリ:
  *   STARTLE … 驚き  : ｱ.wav のみ
  *   IDLE    … 独り言 : ｽﾋﾟｷ.wav
- *   SAD     … 悲しみ : ｽﾋﾟｷｦｲｼﾞﾒﾇﾝﾃﾞ, ｴｱｱ (感情0)
+ *   SAD     … 悲しみ : ｴｱｱ (感情0、好感度プラス時)
+ *   SAD_NEG … 悲しみ(好感度マイナス) : ｽﾋﾟｷｦｲｼﾞﾒﾇﾝﾃﾞ (好感度<0のみ)
  *   HAPPY   … 機嫌良い : ｼﾞｮｱﾔ系4種 (感情2以上)
+ *   PET     … なでられ : ﾁｮﾜﾖ系 (ピンク色フキダシ)
  *   PUMPKIN … かぼちゃ専用 : ｼﾞｮｱﾖﾎﾊﾞｷﾞ
  *   FREEZE  … 凍結   : ﾋﾟｷ.wav
  *   INTERACT… 相互作用 : ｳｱｱｽﾋﾟｷｴﾙｼﾞ, ｼﾞｮｱﾖ系
@@ -16,16 +18,18 @@ const BASE = 'sounds/';
 const LOGICAL_WIDTH = 1000;
 
 const CLIPS = {
-    STARTLE: ['ｱ.wav'],                          // 驚き: ｱのみ
+    STARTLE: ['ｱ.wav'],
     IDLE: ['ｽﾋﾟｷ.wav'],
-    SAD: ['ｽﾋﾟｷｦｲｼﾞﾒﾇﾝﾃﾞ.wav', 'ｴｱｱ.wav'],  // 感情0
+    SAD: ['ｴｱｱ.wav'],
+    SAD_NEG: ['ｽﾋﾟｷｦｲｼﾞﾒﾇﾝﾃﾞ.wav'],
     HAPPY: ['ｼﾞｮｱﾔ.wav', 'ｼﾞｮｱﾖｽﾝﾊﾞｺｯﾁ.wav', 'ｼﾞｮｱﾖﾎﾊﾞｷﾞ.wav', 'ｼﾞｮｱﾖﾑﾙｺﾞﾙ.wav'],
-    PUMPKIN: ['ｼﾞｮｱﾖﾎﾊﾞｷﾞ.wav'],                // かぼちゃ専用
-    FREEZE: ['ﾋﾟｷ.wav'],                         // 凍結専用 (新ファイル)
+    PET: ['ｼﾞｮｱﾔ.wav', 'ｼﾞｮｱﾖｽﾝﾊﾞｺｯﾁ.wav', 'ｼﾞｮｱﾖﾎﾊﾞｷﾞ.wav', 'ｼﾞｮｱﾖﾑﾙｺﾞﾙ.wav'],
+    PUMPKIN: ['ｼﾞｮｱﾖﾎﾊﾞｷﾞ.wav'],
+    FREEZE: ['ﾋﾟｷ.wav'],
     INTERACT: ['ｳｱｱｽﾋﾟｷｴﾙｼﾞ.wav', 'ｼﾞｮｱﾔ.wav', 'ｼﾞｮｱﾖｽﾝﾊﾞｺｯﾁ.wav', 'ｼﾞｮｱﾖﾑﾙｺﾞﾙ.wav'],
 };
 
-/** フキダシ表示テキスト (略称) */
+/** フキダシ表示テキスト */
 const CLIP_TEXT = {
     'ｱ.wav': 'ｱ！',
     'ｳｱｱ.wav': 'ｳｱｱ！',
@@ -39,6 +43,9 @@ const CLIP_TEXT = {
     'ｼﾞｮｱﾖﾑﾙｺﾞﾙ.wav': 'ﾑﾙｺﾞﾙﾚｼﾞﾁｮﾜﾖ',
     'ﾋﾟｷ.wav': 'ﾋﾟｷ！',
 };
+
+/** ピンク色フキダシのカテゴリ */
+const PINK_CATEGORIES = new Set(['PET']);
 
 const cache = new Map();
 let ctx = null;
@@ -73,7 +80,7 @@ export function preloadSounds() {
 // -----------------------------------------------------------
 // フキダシ字幕 (スピキ頭上DOM)
 // -----------------------------------------------------------
-function showSubtitle(mateId, text) {
+function showSubtitle(mateId, text, pink = false) {
     const mateEl = document.getElementById(`mate-${mateId}`);
     if (!mateEl) return;
     let sub = mateEl.querySelector('.mate-speech');
@@ -85,8 +92,6 @@ function showSubtitle(mateId, text) {
             'bottom:115%',
             'left:50%',
             'transform:translateX(-50%)',
-            'background:rgba(15,15,25,0.82)',
-            'color:#f8f8ff',
             'font-size:11px',
             'font-family:sans-serif',
             'padding:3px 9px',
@@ -94,7 +99,6 @@ function showSubtitle(mateId, text) {
             'white-space:nowrap',
             'pointer-events:none',
             'z-index:10001',
-            'border:1px solid rgba(255,255,255,0.22)',
             'box-shadow:0 2px 8px rgba(0,0,0,0.5)',
             'transition:opacity 0.55s ease',
         ].join(';');
@@ -102,6 +106,15 @@ function showSubtitle(mateId, text) {
     }
     sub.textContent = text;
     sub.style.opacity = '1';
+    if (pink) {
+        sub.style.background = 'rgba(220,80,140,0.85)';
+        sub.style.border = '1px solid rgba(255,180,220,0.5)';
+        sub.style.color = '#fff0f8';
+    } else {
+        sub.style.background = 'rgba(15,15,25,0.82)';
+        sub.style.border = '1px solid rgba(255,255,255,0.22)';
+        sub.style.color = '#f8f8ff';
+    }
     clearTimeout(sub._fadeTimer);
     sub._fadeTimer = setTimeout(() => { sub.style.opacity = '0'; }, 2400);
 }
@@ -134,7 +147,8 @@ export async function play(category, { volume = 1.0, pan = 0, mateId = null } = 
     src.start();
 
     if (mateId) {
-        showSubtitle(mateId, CLIP_TEXT[file] || file.replace('.wav', ''));
+        const pink = PINK_CATEGORIES.has(category);
+        showSubtitle(mateId, CLIP_TEXT[file] || file.replace('.wav', ''), pink);
     }
 }
 
@@ -162,7 +176,12 @@ export function getPan(mate) {
 export function maybeSpeakIdle(mate) {
     const pan = getPan(mate);
     if (mate.emotion === 0) {
-        if (Math.random() < 0.003) trySpeak(mate.id, 'SAD', { minInterval: 8000, volume: 0.9, pan });
+        // 好感度マイナスならネガティブセリフ、プラスなら普通の悲しみ
+        if ((mate.friendliness || 0) < 0) {
+            if (Math.random() < 0.003) trySpeak(mate.id, 'SAD_NEG', { minInterval: 8000, volume: 0.9, pan });
+        } else {
+            if (Math.random() < 0.003) trySpeak(mate.id, 'SAD', { minInterval: 8000, volume: 0.9, pan });
+        }
         return;
     }
     if (mate.emotion >= 2) {

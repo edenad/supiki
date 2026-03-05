@@ -318,9 +318,45 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
             }
 
             if (mate.stateTimer <= 0) {
+                // --- 好感度 clamp ---
+                mate.friendliness = Math.max(-10, Math.min(10, mate.friendliness || 0));
+
                 // Check Mouse Proximity
                 const mouseDist = Math.hypot(mate.screenX - state.mouse.x, mate.screenY - state.mouse.y);
                 if (mouseDist < 200) {
+                    const fl = mate.friendliness || 0;
+
+                    // 好感度マイナス → 逃げる
+                    if (fl < 0 && !mate.isRunningAway && mate.interactionCooldown <= 0) {
+                        trySpeak(mate.id, 'STARTLE', { minInterval: 3000, pan: getPan(mate) });
+                        const dx = mate.screenX - state.mouse.x;
+                        const dz = mate.z; // 逃げ方向: X軸のみ使う
+                        const awayAngle = Math.atan2(0, dx || 1); // 横に逃げる
+                        const runSpeed = 2.5;
+                        mate.state = STATES.WALK;
+                        mate.walkType = 'straight';
+                        mate.vx = (dx > 0 ? 1 : -1) * runSpeed;
+                        mate.vz = (Math.random() - 0.5) * runSpeed;
+                        mate.direction = mate.vx > 0 ? 1 : -1;
+                        mate.stateTimer = 90;
+                        mate.isRunningAway = true;
+                        return;
+                    }
+
+                    // 好感度高い(5以上) → 近づいてくる
+                    if (fl >= 5 && !state.gameMode && mate.interactionCooldown <= 0) {
+                        trySpeak(mate.id, 'HAPPY', { minInterval: 5000, pan: getPan(mate) });
+                        const dx = state.mouse.x - mate.screenX;
+                        const approachSpeed = 1.2;
+                        mate.vx = (dx > 0 ? 1 : -1) * approachSpeed;
+                        mate.vz = 0;
+                        mate.direction = mate.vx > 0 ? 1 : -1;
+                        mate.state = STATES.WALK;
+                        mate.stateTimer = 60;
+                        return;
+                    }
+
+                    // 通常の振り向き
                     mate.stateTimer = 30;
                     if (mate.wisdom >= 3) {
                         const dx = state.mouse.x - mate.screenX;

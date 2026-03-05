@@ -59,10 +59,11 @@ export function createMateElement(mate) {
         // Dekopin: random horizontal direction + upward launch
         const angle = Math.random() * Math.PI * 2;
         const power = 7 + Math.random() * 5; // 7-12 px/frame horizontal
+        const launchH = 5 + Math.random() * 4; // 5-9
 
         m.vx = Math.cos(angle) * power;
         m.vz = Math.sin(angle) * power * 0.3;
-        m.vh = 5 + Math.random() * 4; // Strong upward launch (was 1-3, now 5-9)
+        m.vh = launchH;
         m.h = 2;  // Start slightly above ground so physics treats as airborne
 
         m.state = STATES.JUMP; // Use JUMP so airborne physics handles it correctly
@@ -75,6 +76,9 @@ export function createMateElement(mate) {
 
         // 驚き発話
         trySpeak(m.id, 'STARTLE', { minInterval: 1500, pan: getPan(m) });
+
+        // 好感度DOWN (デコピン)
+        m.friendliness = Math.max(-10, (m.friendliness || 0) - 1);
 
         // Emotion hit (rotation-only flick - no scale/aspect ratio change)
         m.emotion = Math.max(0, m.emotion - 1);
@@ -91,45 +95,68 @@ export function createMateElement(mate) {
         e.stopPropagation();
     });
 
-    // Petting Logic (Rubbing)
-    // Track movement to distinguish hovering from rubbing
-    let petDist = 0;
-    let lastPetCheck = 0;
+    // ========== お触り (Pet Mode) ロジック ==========
+    // なでるモード (state.cursor.mode === 'pet') のとき、
+    // スピキの頭上でマウスを左右にこすると「なでた」判定する。
+    let petMoveAcc = 0;     // 左右の移動量累積
+    let petActiveMs = 0;    // 合計なで時間 (ms)
+    let lastPetTick = 0;    // 前回チェック時刻
+    let petFirstSpoken = false;  // 1回目セリフ済み
+    let petSecondSpoken = false; // 2回目セリフ済み (10秒超え)
+    let petIdleTimer = null;    // なでが止まったときのリセットタイマー
 
     el.addEventListener('mousemove', (e) => {
-        // Prevent trigger while dragging
         if (state.drag.isDragging) return;
+        if ((state.cursor?.mode || 'grab') !== 'pet') return;
 
-        // Accumulate movement distance
-        const dx = Math.abs(e.movementX || 0);
-        const dy = Math.abs(e.movementY || 0);
-        petDist += dx + dy;
+        const m = state.mates.find(x => x.id === mate.id);
+        if (!m) return;
+
+        // --- 頭上ホバー判定 ---
+        const rect = el.getBoundingClientRect();
+        const relY = e.clientY - rect.top;
+        const isOverHead = relY < rect.height * 0.55; // 上半分以上
+        if (!isOverHead) return;
+
+        // 横方向累積
+        petMoveAcc += Math.abs(e.movementX || 0);
+
+        // なで判定リセットタイマーをリフレッシュ (動かなくなって1.5秒でリセット)
+        clearTimeout(petIdleTimer);
+        petIdleTimer = setTimeout(() => { petMoveAcc = 0; }, 1500);
 
         const now = Date.now();
-        // Check roughly 10 times a second (100ms interval)
-        if (now - lastPetCheck > 100) {
-            // Threshold: Must have moved significant amount (e.g. > 50px accumulated) to count as "Rub/Pet"
-            // This prevents static hover or tiny jitters from triggering
-            if (petDist > 50) {
-                const m = state.mates.find(x => x.id === mate.id);
-                if (m) {
-                    // Increase friendliness (Cap at 100)
-                    // Logic runs 10 times/sec max. +0.5 per tick = +5/sec. 20s to max.
-                    if (m.friendliness < 100) m.friendliness += 0.5;
+        // 100ms ごとに評価
+        if (now - lastPetTick < 100) return;
+        lastPetTick = now;
 
-                    // Petting improves emotion (Chance based on Friendliness)
-                    const happyChance = (m.friendliness / 100) * 0.2; // Max 20% chance per 100ms
+        // しきい値: 100ms 間に30px以上動いていれば「なでてる」
+        if (petMoveAcc < 30) {
+            petMoveAcc = 0;
+            return;
+        }
+        petMoveAcc = 0;
 
-                    if (m.emotion < 3 && Math.random() < happyChance) {
-                        m.emotion += 1;
-                    }
+        // なで時間を加算
+        petActiveMs += 100;
 
-                    // Optional: Visual feedback or log could go here
-                }
-            }
-            // Reset accumulator
-            petDist = 0;
-            lastPetCheck = now;
+        // --- 1回目セリフ (~3秒) ---
+        if (!petFirstSpoken && petActiveMs >= 3000) {
+            petFirstSpoken = true;
+            const pan = getPan(m);
+            trySpeak(m.id, 'PET', { minInterval: 0, volume: 0.85, pan });
+        }
+
+        // --- 2回目セリフ & 好感度UP開始 (~10秒) ---
+        if (!petSecondSpoken && petActiveMs >= 10000) {
+            petSecondSpoken = true;
+            const pan = getPan(m);
+            trySpeak(m.id, 'PET', { minInterval: 0, volume: 0.9, pan });
+        }
+
+        // 2回目セリフ後は毎tick好感度UP
+        if (petSecondSpoken) {
+            m.friendliness = Math.min(10, (m.friendliness || 0) + 0.1);
         }
     });
 
