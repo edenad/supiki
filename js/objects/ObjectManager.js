@@ -9,8 +9,11 @@ export function spawnObject(config, x, z) {
 
     // Check for overlap and find free tile
     const TILE = 50;
-    let spawnX = x;
-    let spawnZ = z;
+
+    // 画面内にクランプ (コンテナ幅が取れない場合はデフォルト1000)
+    const containerWidth = document.getElementById('game-container')?.clientWidth || 1000;
+    let spawnX = Math.max(0, Math.min(containerWidth - TILE, x));
+    let spawnZ = Math.max(0, Math.min(250, z));
 
     const isOccupied = (tx, tz) => {
         return state.objects.some(o => CollisionSystem.getTileDistance(tx, tz, o.x, o.z) === 0);

@@ -163,6 +163,31 @@ export const ITEM_CONFIGS = {
         },
         onInteractEnd: (mate, obj) => { }
     },
+    TREE: {
+        type: 'tree',
+        src: IMAGES.TREE,
+        text: '🌳',
+        width: 2,
+        depth: 2,
+        capacity: 0, // インタラクト不可（障害物として機能）
+        conditions: (mate, obj) => false,
+        onInteractStart: (mate, obj) => { },
+        onInteractTick: (mate, obj) => false,
+        onInteractEnd: (mate, obj) => { }
+    },
+    FUSEN: {
+        type: 'fusen',
+        src: IMAGES.FUSEN,
+        text: '🎈',
+        width: 1,
+        depth: 1,
+        capacity: 0, // 現状は設置アイテムとして追加。将来的に拾うなどのアクションを追加可能
+        conditions: (mate, obj) => false,
+        onInteractStart: (mate, obj) => { },
+        onInteractTick: (mate, obj) => false,
+        onInteractEnd: (mate, obj) => { },
+        offsetY: -30 // 浮いているように見せるためのオフセット
+    },
     SPIKEY: {
         type: 'spikey',
         src: "pictures/スピッキー.png",
