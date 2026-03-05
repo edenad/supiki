@@ -768,440 +768,433 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
                         }
                     }
 
-                    if (mate.actionTimer === 60) { // End of interaction
-                        if (mate.emotion === 0) {
-                            const p = Math.min(1.0, (mate.courage || 0) / 5);
-                            if (Math.random() < p) mate.emotion = Math.min(3, mate.emotion + 1);
-                        } else if (mate.emotion >= 2) {
-                            const p = Math.min(0.5, (mate.wisdom || 0) / 10);
-                            if (Math.random() < p) mate.emotion = Math.min(3, mate.emotion + 1);
-                        }
-                    }
-                } else if (mate.reactionType === 'dance') {
-                    // Dance animation
-                    mate.offsetY = -Math.abs(Math.sin(mate.actionTimer * 0.3)) * 10;
-                    if (mate.actionTimer % 20 === 0) mate.direction *= -1;
-
-                    if (mate.actionTimer === 60) {
-                        // Evaluate only once per pair to keep them synchronized
-                        if (mate.id < target.id) {
-                            const totalCourage = (mate.courage || 0) + (target.courage || 0);
-                            if (Math.random() < totalCourage * 0.10) {
-                                mate.emotion = Math.min(3, mate.emotion + 1);
-                                target.emotion = Math.min(3, target.emotion + 1);
-                            }
-                        }
-                    }
-                } else if (mate.reactionType === 'greet') {
-                    // Fake jump animation (parabola)
-                    if (mate.actionTimer < 15) {
-                        mate.offsetY = -(Math.sin((mate.actionTimer / 15) * Math.PI) * 20);
-                    } else {
-                        mate.offsetY = 0;
-                        // Happy wiggle while waiting
-                        if (mate.actionTimer % 10 < 5) mate.skewX = 5;
-                        else mate.skewX = -5;
-                    }
                 }
+            } else if (mate.reactionType === 'dance') {
+                // Dance animation
+                mate.offsetY = -Math.abs(Math.sin(mate.actionTimer * 0.3)) * 10;
+                if (mate.actionTimer % 20 === 0) mate.direction *= -1;
 
-                // End of interaction
-                let endTime = 60;
-                if (mate.reactionType === 'greet') endTime = 45; // greet finishes faster
-
-                if (mate.actionTimer >= endTime) {
-                    mate.state = STATES.IDLE;
-                    mate.stateTimer = 60 + Math.random() * 60;
-                    mate.reactionType = null;
-                    mate.reactionTargetId = null;
-                    mate.skewX = 0;
-                    mate.scaleX = 1;
-                    mate.scaleY = 1;
+                if (mate.actionTimer % 20 === 0) mate.direction *= -1;
+            } else if (mate.reactionType === 'greet') {
+                // Fake jump animation (parabola)
+                if (mate.actionTimer < 15) {
+                    mate.offsetY = -(Math.sin((mate.actionTimer / 15) * Math.PI) * 20);
+                } else {
                     mate.offsetY = 0;
-                    mate.interactionCooldown = 180; // Reset to original 3s cooldown
+                    // Happy wiggle while waiting
+                    if (mate.actionTimer % 10 < 5) mate.skewX = 5;
+                    else mate.skewX = -5;
                 }
             }
-            else if (mate.reactionType === 'thaw_friend') {
-                const target = state.mates.find(m => m.id === mate.reactionTargetId);
-                if (!target || !target.gameFrozen) {
-                    // Target thawed or gone – stop helping
-                    mate.state = STATES.IDLE;
-                    mate.stateTimer = 60;
-                    mate.reactionType = null;
-                    mate.reactionTargetId = null;
-                    mate.skewX = 0; mate.offsetY = 0;
-                    vx = 0; vz = 0;
-                } else {
-                    mate.actionTimer++;
-                    const dx = target.x - mate.x;
-                    const dz = target.z - mate.z;
-                    const dist = Math.sqrt(dx * dx + dz * dz);
-                    if (dist > 50) {
-                        // Approach
-                        const spd = 2.5;
-                        const angle = Math.atan2(dz, dx);
-                        vx = Math.cos(angle) * spd;
-                        vz = Math.sin(angle) * spd;
-                        mate.direction = vx > 0 ? 1 : -1;
-                        mate.offsetY = -Math.abs(Math.sin(mate.actionTimer * 0.3)) * 5;
-                    } else {
-                        // Rub!
-                        vx = 0; vz = 0;
-                        mate.direction = dx > 0 ? 1 : -1;
-                        mate.skewX = Math.sin(mate.actionTimer * 0.5) * 15 * mate.direction;
-                        mate.offsetY = 0;
-                        if (target.bodyTemp !== undefined) {
-                            target.bodyTemp = Math.min(100, target.bodyTemp + 0.4); // ×2仕事量
-                        }
-                    }
+
+            // End of interaction
+            let endTime = 60;
+            if (mate.reactionType === 'greet') endTime = 45; // greet finishes faster
+
+            if (mate.actionTimer >= endTime) {
+                // Interaction emotion boost
+                const courage = mate.courage || 0;
+                const wisdom = mate.wisdom || 0;
+                const emo = mate.emotion || 0;
+                const chance = (courage + wisdom) * (10 - emo * 2) / 100;
+
+                if (Math.random() < chance) {
+                    mate.emotion = Math.min(3, emo + 1);
                 }
+
+                mate.state = STATES.IDLE;
+                mate.stateTimer = 60 + Math.random() * 60;
+                mate.reactionType = null;
+                mate.reactionTargetId = null;
+                mate.skewX = 0;
+                mate.scaleX = 1;
+                mate.scaleY = 1;
+                mate.offsetY = 0;
+                mate.interactionCooldown = 180; // Reset to original 3s cooldown
             }
-            else if (mate.targetObjectId) {
-                // --- Object Interaction ---
-                const obj = state.objects.find(o => o.id === mate.targetObjectId);
-                if (!obj) {
-                    // Target was removed (e.g. food eaten by someone else)
-                    // Properly reset all walk-to-eat state to avoid infinite WALK
-                    mate.state = STATES.IDLE;
-                    mate.stateTimer = 30;
-                    mate.targetObjectId = null;
-                    mate.walkingToEat = false;
-                    return;
-                }
-                const finished = obj.onInteractTick(mate, obj);
-                // Sync local velocity variables as onInteractTick modifies the object directly
-                vx = mate.vx;
-                vz = mate.vz;
-                vh = mate.vh; // Fix: Sync vertical velocity too (e.g. for trampoline)
-
-                if (finished) {
-                    if (obj.onInteractEnd) obj.onInteractEnd(mate, obj);
-                    obj.removeInteractor(mate.id);
-
-                    // Only force IDLE if the interaction didn't transition to another state (like JUMP)
-                    if (mate.state === STATES.INTERACT) {
-                        mate.state = STATES.IDLE;
-                        mate.stateTimer = 60 + Math.random() * 60;
-                    }
-
-                    mate.targetObjectId = null;
-                    mate.walkingToEat = false;
-                    if (mate.interactionCooldown <= 0) {
-                        mate.interactionCooldown = 300; // Default 5 seconds blank
-                    }
-                }
-            } else {
-                // --- Wall/Idle Interaction (formerly EDGE_STAY) ---
+        }
+        else if (mate.reactionType === 'thaw_friend') {
+            const target = state.mates.find(m => m.id === mate.reactionTargetId);
+            if (!target || !target.gameFrozen) {
+                // Target thawed or gone – stop helping
+                mate.state = STATES.IDLE;
+                mate.stateTimer = 60;
+                mate.reactionType = null;
+                mate.reactionTargetId = null;
+                mate.skewX = 0; mate.offsetY = 0;
                 vx = 0; vz = 0;
-                mate.stateTimer--;
-                // actionTimer is decremented once below (with guard)
-
-                // Motion: IDLE_BREATH or IDLE_DIG
-                if (mate.edgeAction === 'dig') {
-                    MOTIONS.IDLE_DIG.update(mate, t);
-                    const isLeftSide = x < containerWidth / 2;
-                    mate.direction = isLeftSide ? 1 : -1;
+            } else {
+                mate.actionTimer++;
+                const dx = target.x - mate.x;
+                const dz = target.z - mate.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > 50) {
+                    // Approach
+                    const spd = 2.5;
+                    const angle = Math.atan2(dz, dx);
+                    vx = Math.cos(angle) * spd;
+                    vz = Math.sin(angle) * spd;
+                    mate.direction = vx > 0 ? 1 : -1;
+                    mate.offsetY = -Math.abs(Math.sin(mate.actionTimer * 0.3)) * 5;
                 } else {
-                    MOTIONS.IDLE_BREATH.update(mate, t);
-                    if (mate.edgeAction === 'look_mouse') {
-                        mate.direction = state.mouse.x < x ? -1 : 1;
-                        mate.rotation = 0;
-                    } else {
-                        mate.direction = x < containerWidth / 2 ? 1 : -1;
-                        mate.rotation = 0;
-                    }
-                }
-
-                // Guard: actionTimer should not go below -1 to avoid phantom triggers
-                if (mate.actionTimer > 0) mate.actionTimer--;
-                else if (mate.actionTimer < -1) mate.actionTimer = -1;
-
-                if (mate.actionTimer <= 0) {
-                    // Check if we just finished DIGGING
-                    if (mate.edgeAction === 'dig') {
-                        // Digging Finished: check success
-                        // courage (1-5) => success 20% - 60%
-                        const courage = mate.courage || 3;
-                        const findChance = 0.2 + (courage - 1) / 4 * 0.4; // 0.2 to 0.6
-
-                        if (Math.random() < findChance) {
-                            // Found something!
-                            // wisdom (1-5) => star chance 10% - 50%
-                            const wisdom = mate.wisdom || 3;
-                            const starChance = 0.1 + (wisdom - 1) / 4 * 0.4; // 0.1 to 0.5
-
-                            const type = Math.random() < starChance ? 'star' : 'cinnamon';
-
-                            // Spawn nearby
-                            window.dispatchEvent(new CustomEvent('spawn-object', {
-                                detail: {
-                                    type: 'food',
-                                    foodType: type,
-                                    x: mate.x + (Math.random() - 0.5) * 20,
-                                    z: mate.z + (Math.random() - 0.5) * 10
-                                }
-                            }));
-
-                            mate.emotion = Math.min(3, mate.emotion + 1);
-                        }
-                        mate.edgeAction = null; // Reset after dig attempt
-                    }
-
-
-                    if (mate.stateTimer <= 0) {
-                        // Finish IDLE State -> Transition to WALK
-                        mate.state = STATES.WALK;
-                        const targetX = containerWidth / 2 + (Math.random() - 0.5) * 200;
-                        const targetZ = getSnappedZ(CONSTANTS.DEPTH_RANGE / 2 + (Math.random() - 0.5) * 100);
-                        const dx = targetX - x;
-                        const dz = targetZ - z;
-                        const walkSpeed = 2;
-                        const angle = Math.atan2(dz, dx);
-                        vx = Math.cos(angle) * walkSpeed;
-                        vz = Math.sin(angle) * walkSpeed;
-                        mate.stateTimer = Math.sqrt(dx * dx + dz * dz) / walkSpeed;
-                        mate.walkType = 'straight';
-                        mate.direction = vx > 0 ? 1 : -1;
-                    } else {
-                        // Change Action within IDLE
-                        mate.actionTimer = 60 + Math.random() * 120;
-                        // Decide next action: look_center or look_mouse
-                        // (Dig is handled by the per-frame spontaneous trigger, not here)
-                        mate.edgeAction = Math.random() < 0.5 ? 'look_center' : 'look_mouse';
+                    // Rub!
+                    vx = 0; vz = 0;
+                    mate.direction = dx > 0 ? 1 : -1;
+                    mate.skewX = Math.sin(mate.actionTimer * 0.5) * 15 * mate.direction;
+                    mate.offsetY = 0;
+                    if (target.bodyTemp !== undefined) {
+                        target.bodyTemp = Math.min(100, target.bodyTemp + 0.4); // ×2仕事量
                     }
                 }
             }
         }
-        else if (currentState === STATES.WALK) {
-            mate.stateTimer--;
-            if (mate.emotion === 0) {
-                // Motion Selection: WALK_SHIVER vs WALK_NORMAL
-                // 40% Shiver
-                if (Math.random() < 0.4) {
-                    MOTIONS.WALK_SHIVER.update(mate, t);
-                    // Shiver includes random jitter on x/z? 
-                    // Old code had x/z jitter. Motion updates transform. 
-                    // We must do position jitter here or inside Motion?
-                    // Motion list "update" takes mate. It can modify x/z.
-                    // But usually visuals only modify scale/rot.
-                    // Let's add jitter here manually if needed, or assume Motion handles it?
-                    // MotionConfigs: WALK_SHIVER only does rotation.
-                    // Re-add jitter here:
-                    x += (Math.random() - 0.5) * 3;
-                    z += (Math.random() - 0.5) * 3;
-                } else {
-                    MOTIONS.WALK_NORMAL.update(mate, t);
-                }
-            } else {
-                // Emotion >= 1 (Normal base)
-                let usedMotion = false;
-
-                // Priority Check for Bouncy
-                if (mate.emotion >= 3) {
-                    // Check if valid?
-                    // Old code: "Only bounce if skewing? ... or independent"
-                    // Let's simplify: High Emotion = Bouncy Walk
-                    MOTIONS.WALK_BOUNCY.update(mate, t);
-                    usedMotion = true;
-                }
-                else if (mate.emotion >= 2 && Math.random() < 0.7) {
-                    MOTIONS.WALK_SKEW.update(mate, t);
-                    usedMotion = true;
-                }
-
-                if (!usedMotion) {
-                    MOTIONS.WALK_NORMAL.update(mate, t);
-                }
-            }
-
-            // Check for Object Interference during Walk (Interruption)
-            // Skip if rolling (dekopin) or already targeting something
-            if (!mate.isRolling && !mate.walkingToEat && !mate.targetObjectId && !mate.isRunningAway && state.objects.length > 0) {
-                state.objects.forEach(obj => {
-                    // Check conditions
-                    if (obj.conditions && !obj.conditions(mate, obj)) return;
-
-                    const interferenceRadius = (obj.radius || 30) + 50;
-
-                    if (CollisionSystem.checkTileOverlap(x, z, obj.x, obj.z, interferenceRadius)) {
-                        let chance = 0.6 + (mate.wisdom * 0.1);
-                        let triggerThreshold = 0.05;
-
-                        if (obj.type === 'candy') {
-                            chance = 1.5;
-                            triggerThreshold = 0.1;
-                            if (mate.emotion < 2) triggerThreshold = 0.5;
-                        }
-
-                        if (Math.random() < triggerThreshold * chance) {
-                            mate.targetObjectId = obj.id;
-
-                            const walkSpeed = 2 * (mate.courage + 5) / 10;
-                            const approach = calcApproachVector(x, z, obj, walkSpeed);
-                            vx = approach.vx;
-                            vz = approach.vz;
-
-                            mate.direction = vx > 0 ? 1 : -1;
-                            mate.walkType = 'straight';
-                            mate.stateTimer = approach.stateTimer;
-                            mate.walkingToEat = true;
-                        }
-                    }
-                });
-            }
-
-            // Boundary Check
-            if ((vx < 0 && x <= 20) || (vx > 0 && x >= containerWidth - 20) ||
-                (vz < 0 && z <= CONSTANTS.MIN_Z) || (vz > 0 && z >= CONSTANTS.DEPTH_RANGE)) {
-
+        else if (mate.targetObjectId) {
+            // --- Object Interaction ---
+            const obj = state.objects.find(o => o.id === mate.targetObjectId);
+            if (!obj) {
+                // Target was removed (e.g. food eaten by someone else)
+                // Properly reset all walk-to-eat state to avoid infinite WALK
                 mate.state = STATES.IDLE;
-                mate.stateTimer = 60;
-                mate.isRunningAway = false; // Reset flag
-                vx = 0; vz = 0;
-                z = getSnappedZ(z);
-            } else if (mate.stateTimer <= 0) {
-                // Reached destination
-                if (mate.walkingToEat && mate.targetObjectId) {
-                    const obj = state.objects.find(o => o.id === mate.targetObjectId);
+                mate.stateTimer = 30;
+                mate.targetObjectId = null;
+                mate.walkingToEat = false;
+                return;
+            }
+            const finished = obj.onInteractTick(mate, obj);
+            // Sync local velocity variables as onInteractTick modifies the object directly
+            vx = mate.vx;
+            vz = mate.vz;
+            vh = mate.vh; // Fix: Sync vertical velocity too (e.g. for trampoline)
 
-                    let canInteract = false;
+            if (finished) {
+                if (obj.onInteractEnd) obj.onInteractEnd(mate, obj);
+                obj.removeInteractor(mate.id);
 
-                    if (obj) {
-                        const arrivalRadius = (obj.detectionRadius !== undefined ? obj.detectionRadius : (obj.radius || 30));
+                // Only force IDLE if the interaction didn't transition to another state (like JUMP)
+                if (mate.state === STATES.INTERACT) {
+                    mate.state = STATES.IDLE;
+                    mate.stateTimer = 60 + Math.random() * 60;
+                }
 
-                        // Strict Tile Check for Arrival
-                        if (CollisionSystem.checkTileOverlap(x, z, obj.x, obj.z, arrivalRadius)) {
-                            canInteract = true;
-                        }
+                mate.targetObjectId = null;
+                mate.walkingToEat = false;
+                if (mate.interactionCooldown <= 0) {
+                    mate.interactionCooldown = 300; // Default 5 seconds blank
+                }
+            }
+        } else {
+            // --- Wall/Idle Interaction (formerly EDGE_STAY) ---
+            vx = 0; vz = 0;
+            mate.stateTimer--;
+            // actionTimer is decremented once below (with guard)
+
+            // Motion: IDLE_BREATH or IDLE_DIG
+            if (mate.edgeAction === 'dig') {
+                MOTIONS.IDLE_DIG.update(mate, t);
+                const isLeftSide = x < containerWidth / 2;
+                mate.direction = isLeftSide ? 1 : -1;
+            } else {
+                MOTIONS.IDLE_BREATH.update(mate, t);
+                if (mate.edgeAction === 'look_mouse') {
+                    mate.direction = state.mouse.x < x ? -1 : 1;
+                    mate.rotation = 0;
+                } else {
+                    mate.direction = x < containerWidth / 2 ? 1 : -1;
+                    mate.rotation = 0;
+                }
+            }
+
+            // Guard: actionTimer should not go below -1 to avoid phantom triggers
+            if (mate.actionTimer > 0) mate.actionTimer--;
+            else if (mate.actionTimer < -1) mate.actionTimer = -1;
+
+            if (mate.actionTimer <= 0) {
+                // Check if we just finished DIGGING
+                if (mate.edgeAction === 'dig') {
+                    // Digging Finished: check success
+                    // courage (1-5) => success 20% - 60%
+                    const courage = mate.courage || 3;
+                    const findChance = 0.2 + (courage - 1) / 4 * 0.4; // 0.2 to 0.6
+
+                    if (Math.random() < findChance) {
+                        // Found something!
+                        // wisdom (1-5) => star chance 10% - 50%
+                        const wisdom = mate.wisdom || 3;
+                        const starChance = 0.1 + (wisdom - 1) / 4 * 0.4; // 0.1 to 0.5
+
+                        const type = Math.random() < starChance ? 'star' : 'cinnamon';
+
+                        // Spawn nearby
+                        window.dispatchEvent(new CustomEvent('spawn-object', {
+                            detail: {
+                                type: 'food',
+                                foodType: type,
+                                x: mate.x + (Math.random() - 0.5) * 20,
+                                z: mate.z + (Math.random() - 0.5) * 10
+                            }
+                        }));
+
+                        mate.emotion = Math.min(3, mate.emotion + 1);
+                    }
+                    mate.edgeAction = null; // Reset after dig attempt
+                }
+
+
+                if (mate.stateTimer <= 0) {
+                    // Finish IDLE State -> Transition to WALK
+                    mate.state = STATES.WALK;
+                    const targetX = containerWidth / 2 + (Math.random() - 0.5) * 200;
+                    const targetZ = getSnappedZ(CONSTANTS.DEPTH_RANGE / 2 + (Math.random() - 0.5) * 100);
+                    const dx = targetX - x;
+                    const dz = targetZ - z;
+                    const walkSpeed = 2;
+                    const angle = Math.atan2(dz, dx);
+                    vx = Math.cos(angle) * walkSpeed;
+                    vz = Math.sin(angle) * walkSpeed;
+                    mate.stateTimer = Math.sqrt(dx * dx + dz * dz) / walkSpeed;
+                    mate.walkType = 'straight';
+                    mate.direction = vx > 0 ? 1 : -1;
+                } else {
+                    // Change Action within IDLE
+                    mate.actionTimer = 60 + Math.random() * 120;
+                    // Decide next action: look_center or look_mouse
+                    // (Dig is handled by the per-frame spontaneous trigger, not here)
+                    mate.edgeAction = Math.random() < 0.5 ? 'look_center' : 'look_mouse';
+                }
+            }
+        }
+    }
+    else if (currentState === STATES.WALK) {
+        mate.stateTimer--;
+        if (mate.emotion === 0) {
+            // Motion Selection: WALK_SHIVER vs WALK_NORMAL
+            // 40% Shiver
+            if (Math.random() < 0.4) {
+                MOTIONS.WALK_SHIVER.update(mate, t);
+                // Shiver includes random jitter on x/z? 
+                // Old code had x/z jitter. Motion updates transform. 
+                // We must do position jitter here or inside Motion?
+                // Motion list "update" takes mate. It can modify x/z.
+                // But usually visuals only modify scale/rot.
+                // Let's add jitter here manually if needed, or assume Motion handles it?
+                // MotionConfigs: WALK_SHIVER only does rotation.
+                // Re-add jitter here:
+                x += (Math.random() - 0.5) * 3;
+                z += (Math.random() - 0.5) * 3;
+            } else {
+                MOTIONS.WALK_NORMAL.update(mate, t);
+            }
+        } else {
+            // Emotion >= 1 (Normal base)
+            let usedMotion = false;
+
+            // Priority Check for Bouncy
+            if (mate.emotion >= 3) {
+                // Check if valid?
+                // Old code: "Only bounce if skewing? ... or independent"
+                // Let's simplify: High Emotion = Bouncy Walk
+                MOTIONS.WALK_BOUNCY.update(mate, t);
+                usedMotion = true;
+            }
+            else if (mate.emotion >= 2 && Math.random() < 0.7) {
+                MOTIONS.WALK_SKEW.update(mate, t);
+                usedMotion = true;
+            }
+
+            if (!usedMotion) {
+                MOTIONS.WALK_NORMAL.update(mate, t);
+            }
+        }
+
+        // Check for Object Interference during Walk (Interruption)
+        // Skip if rolling (dekopin) or already targeting something
+        if (!mate.isRolling && !mate.walkingToEat && !mate.targetObjectId && !mate.isRunningAway && state.objects.length > 0) {
+            state.objects.forEach(obj => {
+                // Check conditions
+                if (obj.conditions && !obj.conditions(mate, obj)) return;
+
+                const interferenceRadius = (obj.radius || 30) + 50;
+
+                if (CollisionSystem.checkTileOverlap(x, z, obj.x, obj.z, interferenceRadius)) {
+                    let chance = 0.6 + (mate.wisdom * 0.1);
+                    let triggerThreshold = 0.05;
+
+                    if (obj.type === 'candy') {
+                        chance = 1.5;
+                        triggerThreshold = 0.1;
+                        if (mate.emotion < 2) triggerThreshold = 0.5;
                     }
 
-                    // Re-check conditions (Capacity might have filled up while walking)
-                    if (canInteract && obj.conditions && !obj.conditions(mate, obj)) {
-                        canInteract = false;
-                        // Maybe look confused?
-                        mate.emotion = Math.max(0, mate.emotion - 1);
+                    if (Math.random() < triggerThreshold * chance) {
+                        mate.targetObjectId = obj.id;
+
+                        const walkSpeed = 2 * (mate.courage + 5) / 10;
+                        const approach = calcApproachVector(x, z, obj, walkSpeed);
+                        vx = approach.vx;
+                        vz = approach.vz;
+
+                        mate.direction = vx > 0 ? 1 : -1;
+                        mate.walkType = 'straight';
+                        mate.stateTimer = approach.stateTimer;
+                        mate.walkingToEat = true;
                     }
+                }
+            });
+        }
 
-                    if (obj && canInteract) {
-                        if (obj.addInteractor(mate.id)) {
-                            mate.state = STATES.INTERACT;
-                            mate.scaleX = 1; mate.scaleY = 1; mate.rotation = 0;
+        // Boundary Check
+        if ((vx < 0 && x <= 20) || (vx > 0 && x >= containerWidth - 20) ||
+            (vz < 0 && z <= CONSTANTS.MIN_Z) || (vz > 0 && z >= CONSTANTS.DEPTH_RANGE)) {
 
-                            const dx = obj.x - x;
-                            mate.direction = dx >= 0 ? 1 : -1;
+            mate.state = STATES.IDLE;
+            mate.stateTimer = 60;
+            mate.isRunningAway = false; // Reset flag
+            vx = 0; vz = 0;
+            z = getSnappedZ(z);
+        } else if (mate.stateTimer <= 0) {
+            // Reached destination
+            if (mate.walkingToEat && mate.targetObjectId) {
+                const obj = state.objects.find(o => o.id === mate.targetObjectId);
 
-                            if (obj.onInteractStart) obj.onInteractStart(mate, obj);
-                        } else {
-                            // Capacity Full - Abort
-                            mate.state = STATES.IDLE;
-                            mate.stateTimer = 60;
-                            mate.walkingToEat = false;
-                            mate.targetObjectId = null;
-                            vx = 0; vz = 0;
-                            return;
-                        }
+                let canInteract = false;
+
+                if (obj) {
+                    const arrivalRadius = (obj.detectionRadius !== undefined ? obj.detectionRadius : (obj.radius || 30));
+
+                    // Strict Tile Check for Arrival
+                    if (CollisionSystem.checkTileOverlap(x, z, obj.x, obj.z, arrivalRadius)) {
+                        canInteract = true;
+                    }
+                }
+
+                // Re-check conditions (Capacity might have filled up while walking)
+                if (canInteract && obj.conditions && !obj.conditions(mate, obj)) {
+                    canInteract = false;
+                    // Maybe look confused?
+                    mate.emotion = Math.max(0, mate.emotion - 1);
+                }
+
+                if (obj && canInteract) {
+                    if (obj.addInteractor(mate.id)) {
+                        mate.state = STATES.INTERACT;
+                        mate.scaleX = 1; mate.scaleY = 1; mate.rotation = 0;
+
+                        const dx = obj.x - x;
+                        mate.direction = dx >= 0 ? 1 : -1;
+
+                        if (obj.onInteractStart) obj.onInteractStart(mate, obj);
                     } else {
+                        // Capacity Full - Abort
                         mate.state = STATES.IDLE;
                         mate.stateTimer = 60;
-                        mate.isRunningAway = false;
+                        mate.walkingToEat = false;
+                        mate.targetObjectId = null;
+                        vx = 0; vz = 0;
+                        return;
                     }
-                    mate.walkingToEat = false;
-                    vx = 0; vz = 0;
                 } else {
                     mate.state = STATES.IDLE;
                     mate.stateTimer = 60;
                     mate.isRunningAway = false;
-                    vx = 0; vz = 0;
-                    z = getSnappedZ(z);
+                }
+                mate.walkingToEat = false;
+                vx = 0; vz = 0;
+            } else {
+                mate.state = STATES.IDLE;
+                mate.stateTimer = 60;
+                mate.isRunningAway = false;
+                vx = 0; vz = 0;
+                z = getSnappedZ(z);
 
-                    // GROUP LOGIC OVERRIDE
-                    if (mate.groupId) {
-                        // Just stop and wait. Group will command again.
-                        mate.stateTimer = 30;
-                    }
+                // GROUP LOGIC OVERRIDE
+                if (mate.groupId) {
+                    // Just stop and wait. Group will command again.
+                    mate.stateTimer = 30;
                 }
             }
-
-            // Always face movement direction if walking
-            if (mate.state === STATES.WALK && Math.abs(vx) > 0.1) {
-                mate.direction = vx > 0 ? 1 : -1;
-            }
         }
-    } else {
-        // Airborne
-        if (currentState !== STATES.DRAGGED) mate.state = STATES.JUMP;
 
-        vh -= state.physics.gravity;
-        mate.skewX = 0; mate.offsetY = 0;
-
-        if (!mate.isRolling) {
-            // Normal jump visuals
-            MOTIONS.JUMP_STRETCH.update(mate, vh);
-            mate.rotation = vx * 2;
-        }
-        // isRolling: rotation is already set by the rolling block above
-
-        if (h > ceilingHeight) {
-            h = ceilingHeight;
-            vh *= -state.physics.bounce;
+        // Always face movement direction if walking
+        if (mate.state === STATES.WALK && Math.abs(vx) > 0.1) {
+            mate.direction = vx > 0 ? 1 : -1;
         }
     }
+} else {
+    // Airborne
+    if (currentState !== STATES.DRAGGED) mate.state = STATES.JUMP;
 
-    // --- Separation Logic Removed/Disabled to prevent pushing/backwalking ---
-    /*
-    const separationRadius = CONSTANTS.MATE_SEPARATION || 30;
-    let pushX = 0;
-    let pushZ = 0;
-     
-    state.mates.forEach(other => {
-        if (other.id === mate.id) return;
-        const dx = mate.x - other.x;
-        const dz = mate.z - other.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
-     
-        if (dist < separationRadius && dist > 0.1) {
-            const force = (separationRadius - dist) / separationRadius; // 0 to 1
-            const push = force * 5.0; // Stronger push
-     
-            pushX += (dx / dist) * push;
-            pushZ += (dz / dist) * push;
-        }
-    });
-     
-    if (mate.h <= 0 && (mate.state === STATES.IDLE || mate.state === STATES.WALK)) {
-        x += pushX;
-        z += pushZ;
+    vh -= state.physics.gravity;
+    mate.skewX = 0; mate.offsetY = 0;
+
+    if (!mate.isRolling) {
+        // Normal jump visuals
+        MOTIONS.JUMP_STRETCH.update(mate, vh);
+        mate.rotation = vx * 2;
     }
-    */
+    // isRolling: rotation is already set by the rolling block above
 
-    // Apply Physics
-    x += vx;
-    z += vz;
-    h += vh;
+    if (h > ceilingHeight) {
+        h = ceilingHeight;
+        vh *= -state.physics.bounce;
+    }
+}
 
-    // X Limits (Margin for Visuals)
-    const margin = mate.size ? mate.size / 2 : 32;
-    if (x < margin) { x = margin; vx *= -0.5; mate.direction = 1; }
-    if (x > containerWidth - margin) { x = containerWidth - margin; vx *= -0.5; mate.direction = -1; }
+// --- Separation Logic Removed/Disabled to prevent pushing/backwalking ---
+/*
+const separationRadius = CONSTANTS.MATE_SEPARATION || 30;
+let pushX = 0;
+let pushZ = 0;
+ 
+state.mates.forEach(other => {
+    if (other.id === mate.id) return;
+    const dx = mate.x - other.x;
+    const dz = mate.z - other.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+ 
+    if (dist < separationRadius && dist > 0.1) {
+        const force = (separationRadius - dist) / separationRadius; // 0 to 1
+        const push = force * 5.0; // Stronger push
+ 
+        pushX += (dx / dist) * push;
+        pushZ += (dz / dist) * push;
+    }
+});
+ 
+if (mate.h <= 0 && (mate.state === STATES.IDLE || mate.state === STATES.WALK)) {
+    x += pushX;
+    z += pushZ;
+}
+*/
 
-    // Z Limits
-    if (z < CONSTANTS.MIN_Z) { z = CONSTANTS.MIN_Z; vz *= -1; }
-    if (z > CONSTANTS.DEPTH_RANGE) { z = CONSTANTS.DEPTH_RANGE; vz *= -1; }
+// Apply Physics
+x += vx;
+z += vz;
+h += vh;
 
-    // Update Position State
-    mate.x = x; mate.z = z; mate.h = h;
-    mate.vx = vx; mate.vz = vz; mate.vh = vh;
+// X Limits (Margin for Visuals)
+const margin = mate.size ? mate.size / 2 : 32;
+if (x < margin) { x = margin; vx *= -0.5; mate.direction = 1; }
+if (x > containerWidth - margin) { x = containerWidth - margin; vx *= -0.5; mate.direction = -1; }
 
-    // Calculate Visuals
-    const depthRatio = z / CONSTANTS.DEPTH_RANGE;
-    const perspectiveScale = 1.0 - depthRatio * (1.0 - CONSTANTS.MIN_SCALE);
-    const centerX = containerWidth / 2;
-    const relativeX = x - centerX;
-    const visualX = centerX + relativeX * perspectiveScale;
-    const visualY = containerHeight - mate.size - z - h;
+// Z Limits
+if (z < CONSTANTS.MIN_Z) { z = CONSTANTS.MIN_Z; vz *= -1; }
+if (z > CONSTANTS.DEPTH_RANGE) { z = CONSTANTS.DEPTH_RANGE; vz *= -1; }
 
-    mate.perspectiveScale = perspectiveScale;
-    mate.screenX = visualX;
-    mate.screenY = visualY;
+// Update Position State
+mate.x = x; mate.z = z; mate.h = h;
+mate.vx = vx; mate.vz = vz; mate.vh = vh;
 
-    updateMateElement(mate);
+// Calculate Visuals
+const depthRatio = z / CONSTANTS.DEPTH_RANGE;
+const perspectiveScale = 1.0 - depthRatio * (1.0 - CONSTANTS.MIN_SCALE);
+const centerX = containerWidth / 2;
+const relativeX = x - centerX;
+const visualX = centerX + relativeX * perspectiveScale;
+const visualY = containerHeight - mate.size - z - h;
+
+mate.perspectiveScale = perspectiveScale;
+mate.screenX = visualX;
+mate.screenY = visualY;
+
+updateMateElement(mate);
 }

@@ -169,11 +169,98 @@ export const ITEM_CONFIGS = {
         text: '🌳',
         width: 2,
         depth: 2,
-        capacity: 0, // インタラクト不可（障害物として機能）
-        conditions: (mate, obj) => false,
-        onInteractStart: (mate, obj) => { },
-        onInteractTick: (mate, obj) => false,
-        onInteractEnd: (mate, obj) => { }
+        capacity: 3, // 最大3人まで登れる
+        conditions: (mate, obj) => {
+            if ((mate.interactionCooldown || 0) > 0) return false;
+            // 既に登ってる・向かってる人数のチェック
+            const count = state.mates.filter(m => m.targetObjectId === obj.id && m.id !== mate.id).length;
+            return count < (obj.capacity || 3);
+        },
+        onInteractStart: (mate, obj) => {
+            mate.vx = 0; mate.vz = 0;
+            mate.actionTimer = 0;
+            mate.targetObjectId = obj.id;
+
+            // 少し中央寄りの手前(Z=奥)から登らせるため、目標位置を少し補正
+            const dx = obj.x - mate.x;
+            mate.direction = dx > 0 ? 1 : -1;
+            mate.emotion = Math.max(2, mate.emotion); // 楽しげにする
+        },
+        onInteractTick: (mate, obj) => {
+            mate.actionTimer++;
+
+            // フェーズ1: 木の根本に歩いて近づく (0〜30フレーム)
+            if (mate.actionTimer <= 30) {
+                // 木の根本(少し手前)を目標に歩かせる
+                const targetX = obj.x;
+                const targetZ = obj.z - 20; // 根本あたり
+
+                mate.x += (targetX - mate.x) * 0.1;
+                mate.z += (targetZ - mate.z) * 0.1;
+
+                // 歩行アニメ
+                mate.offsetY = -Math.abs(Math.sin(mate.actionTimer * 0.5)) * 5;
+                if (mate.actionTimer % 10 === 0) mate.skewX = mate.direction * 5;
+                else if (mate.actionTimer % 5 === 0) mate.skewX = 0;
+
+                return false;
+            }
+
+            // フェーズ2: 木を登る (31〜120フレーム)
+            if (mate.actionTimer <= 120) {
+                const prog = (mate.actionTimer - 30) / 90; // 0.0 ~ 1.0
+
+                // 上に昇っていく (-80pxくらいまで)
+                mate.offsetY = -(prog * 90);
+
+                // 左右に少し揺れながら(スネーク)登る
+                mate.x = obj.x + Math.sin(prog * Math.PI * 4) * 15;
+
+                // アニメーション
+                mate.skewX = Math.sin(prog * Math.PI * 8) * 10;
+                mate.direction = Math.sin(prog * Math.PI * 4) > 0 ? 1 : -1;
+
+                return false;
+            }
+
+            // フェーズ3: 頂上で停止・待機 (121〜240フレーム)
+            if (mate.actionTimer <= 240) {
+                mate.offsetY = -90; // 登りきった高さ
+                mate.skewX = 0;
+                // 木の上で左右をキョロキョロ
+                if (mate.actionTimer % 40 === 0) mate.direction *= -1;
+
+                // 声を出す(嬉しい)
+                if (mate.actionTimer === 130) {
+                    trySpeak(mate.id, 'HAPPY', { minInterval: 2000, volume: 0.9, pan: getPan(mate) });
+                }
+                return false;
+            }
+
+            // フェーズ4: 飛び降りる (241〜)
+            // STATES.JUMP に移行させて物理エンジンに任せる
+            mate.scaleY = 1.3; mate.scaleX = 0.8;
+            mate.vh = 8; // ジャンプ初速
+            mate.h = 90; // 現在の高さ(offsetYを物理の高さに変換)
+            mate.offsetY = 0; // offsetYはリセットしてhに引き継ぐ
+            mate.state = STATES.JUMP;
+            mate.stateTimer = 0;
+
+            // 降りる方向 (前方にランダム)
+            mate.vx = (Math.random() - 0.5) * 8;
+            mate.vz = -2 + (Math.random() - 0.5) * 2; // 手前側にジャンプ
+
+            // 飛び降りたのでインタラクト終了
+            return true;
+        },
+        onInteractEnd: (mate, obj) => {
+            mate.targetObjectId = null;
+            if (mate.state === STATES.INTERACT) {
+                mate.state = STATES.IDLE;
+            }
+            // クールダウン付与
+            mate.interactionCooldown = 180;
+        }
     },
     FUSEN: {
         type: 'fusen',

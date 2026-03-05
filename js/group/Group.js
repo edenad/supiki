@@ -207,8 +207,8 @@ export class Group {
                     const rx = -vz;
                     const rz = vx;
 
-                    const SPACING_DEPTH = 20;
-                    const SPACING_WIDTH = 20;
+                    const SPACING_DEPTH = 30;
+                    const SPACING_WIDTH = 30;
 
                     // Show/Hide Debug Dot based on global setting
                     this.debugDot.style.display = state.ui.showDebugZones ? 'flex' : 'none';
@@ -279,8 +279,8 @@ export class Group {
                 const rx = -vz;
                 const rz = vx;
 
-                const SPACING_DEPTH = 20;
-                const SPACING_WIDTH = 20;
+                const SPACING_DEPTH = 30;
+                const SPACING_WIDTH = 30;
 
                 const followers = this.members.filter(id => id !== this.leaderId);
 
