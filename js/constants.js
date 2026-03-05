@@ -34,5 +34,7 @@ export const IMAGES = {
     SPIKEY: 'img/spikey.png',
     POND: './pictures/objects/mizutamari.png',
     UKIWA_FRONT: './pictures/objects/ukiwa_front.png',
-    ICE: './pictures/objects/ice.png'
+    ICE: './pictures/objects/ice.png',
+    TREE: './pictures/objects/tree.png',
+    FUSEN: './pictures/objects/fusen_set.png'
 };
