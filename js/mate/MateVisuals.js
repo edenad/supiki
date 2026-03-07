@@ -29,6 +29,7 @@ export function createMateElement(mate) {
 
     inner.innerHTML = contentHtml; // No close button
     el.appendChild(inner);
+    mate.innerImgEl = inner.firstElementChild; // CACHE IMAGE REF
 
     // Debug Dot (Collision State) - cache reference on mate to avoid per-frame getElementById
     const debugDot = document.createElement('div');
@@ -182,16 +183,15 @@ export function updateMateElement(mate) {
     if (Math.abs(mate.scaleX) > 1.5) mate.scaleX = 1.5;
     if (Math.abs(mate.scaleY) > 1.5) mate.scaleY = 1.5;
 
-    // Update Transform
+    // Update Transform (Using translate3d for main position prevents layout trashing)
     const transform = `
+        translate3d(${mate.screenX}px, ${mate.screenY}px, 0)
         translate3d(0, ${mate.offsetY || 0}px, 0) 
         scale(${mate.scaleX * pScale}, ${mate.scaleY * pScale}) 
         rotate(${mate.rotation || 0}deg)
         skew(${mate.skewX || 0}deg, 0deg)
     `;
 
-    el.style.left = `${mate.screenX}px`;
-    el.style.top = `${mate.screenY}px`;
     el.style.transform = transform;
 
     // Z-Index: Visual Y sorting (Lower on screen = Higher z-index = Front)
@@ -212,7 +212,7 @@ export function updateMateElement(mate) {
     el.style.filter = filter;
 
     // Update direction flipping
-    const innerImg = el.querySelector(`#mate-img-${mate.id}`) || el.querySelector('img') || el.querySelector('div > div');
+    const innerImg = mate.innerImgEl || el.querySelector(`#mate-img-${mate.id}`) || el.querySelector('img') || el.querySelector('div > div');
     if (innerImg) {
         // Safety: Ensure direction is strictly 1 or -1 to prevent accidental huge scaling
         // User reported "excessive negative scale", implying direction might have been accumulating values
@@ -254,7 +254,7 @@ export function updateMateElement(mate) {
         }
     }
     // Ukiwa (Float) Ring Overlay
-    let ukiwa = el.querySelector('.ukiwa-ring');
+    let ukiwa = mate.ukiwaEl;
     // Hide ukiwa if drowning (it broke!)
     if (mate.inPond && !mate.isDrowning) {
         if (!ukiwa) {
@@ -263,11 +263,15 @@ export function updateMateElement(mate) {
             ukiwa.src = IMAGES.UKIWA_FRONT || 'img/ukiwa_front.png'; // Fallback
             ukiwa.style.zIndex = '10'; // In front of mate
             el.appendChild(ukiwa);
+            mate.ukiwaEl = ukiwa;
         }
         // Ukiwa tracks body exactly (no separate bobbing)
         // Ensure accurate centering with translate(-50%, -50%) and scale
         ukiwa.style.transform = 'translate(-50%, -50%) scale(1.1)';
     } else {
-        if (ukiwa) ukiwa.remove();
+        if (ukiwa) {
+            ukiwa.remove();
+            mate.ukiwaEl = null;
+        }
     }
 }

@@ -114,7 +114,7 @@ export function updateMate(mate, containerWidth, containerHeight, t) {
     }
 
     // --- Global Debug Color Update (Realtime) ---
-    {
+    if (state.ui.showDebugZones) {
         let debugMinDist = 9999;
         if (state.objects.length > 0) {
             state.objects.forEach(obj => {

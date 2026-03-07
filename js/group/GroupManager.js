@@ -97,12 +97,12 @@ export function updateGroups() {
     }
 
     // 2. Form new groups
+    if (Math.random() >= 0.002) return; // Reduce formation frequency
+
     const availableMates = state.mates.filter(m => !m.groupId && m.state !== STATES.DRAGGED && m.state !== STATES.JUMP);
 
     // Need at least MIN_GROUP_SIZE mates to form a group
     if (availableMates.length < CONSTANTS.MIN_GROUP_SIZE) return;
-
-    if (Math.random() >= 0.002) return; // Reduce formation frequency
 
     // Checked set to avoid re-checking
     const checked = new Set();

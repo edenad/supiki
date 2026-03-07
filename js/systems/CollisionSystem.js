@@ -24,19 +24,15 @@ export const CollisionSystem = {
      * @returns {boolean}
      */
     checkTileOverlap: function (px, pz, ox, oz, worldRadius) {
-        const pGrid = GridSystem.toGridIndex(px, pz);
-        const oGrid = GridSystem.toGridIndex(ox, oz);
-
         // Convert world radius to tile radius (approx)
-        // Ensure at least 0 range
         const range = Math.max(0, Math.floor(worldRadius / GridSystem.TILE_SIZE));
+        const pCol = Math.floor(px / GridSystem.TILE_SIZE);
+        const pRow = Math.floor(pz / GridSystem.TILE_SIZE);
+        const oCol = Math.floor(ox / GridSystem.TILE_SIZE);
+        const oRow = Math.floor(oz / GridSystem.TILE_SIZE);
 
-        // Check Chebyshev distance (King's move metric) for square/tile based range
-        // dx = abs(c1 - c2), dy = abs(r1 - r2)
-        // if max(dx, dy) <= range, they are in range.
-
-        const dx = Math.abs(pGrid.col - oGrid.col);
-        const dy = Math.abs(pGrid.row - oGrid.row);
+        const dx = Math.abs(pCol - oCol);
+        const dy = Math.abs(pRow - oRow);
 
         return Math.max(dx, dy) <= range;
     },
@@ -45,8 +41,10 @@ export const CollisionSystem = {
      * Helper to get the tile distance between two points
      */
     getTileDistance: function (x1, z1, x2, z2) {
-        const g1 = GridSystem.toGridIndex(x1, z1);
-        const g2 = GridSystem.toGridIndex(x2, z2);
-        return Math.max(Math.abs(g1.col - g2.col), Math.abs(g1.row - g2.row));
+        const c1 = Math.floor(x1 / GridSystem.TILE_SIZE);
+        const r1 = Math.floor(z1 / GridSystem.TILE_SIZE);
+        const c2 = Math.floor(x2 / GridSystem.TILE_SIZE);
+        const r2 = Math.floor(z2 / GridSystem.TILE_SIZE);
+        return Math.max(Math.abs(c1 - c2), Math.abs(r1 - r2));
     }
 };

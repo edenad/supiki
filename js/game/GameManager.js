@@ -187,8 +187,8 @@ export function updateGame() {
     });
 
     // ゲームオーバー：全員が凍ったら終了
-    const unfrozen = state.mates.filter(m => !m.gameFrozen);
-    if (state.mates.length > 0 && unfrozen.length === 0) {
+    const hasUnfrozen = state.mates.some(m => !m.gameFrozen);
+    if (state.mates.length > 0 && !hasUnfrozen) {
         gameActive = false;
         window.removeEventListener('mate-dropped', onMateDropped);
         showGameOver(Math.floor(frameCount / 60));

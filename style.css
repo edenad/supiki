@@ -21,8 +21,10 @@ body {
 
 .mate {
   position: absolute;
+  left: 0;
+  top: 0;
   transform-origin: bottom center;
-  will-change: transform, left, top;
+  will-change: transform;
   cursor: grab;
 }
 
